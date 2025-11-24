@@ -2,412 +2,577 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Mecánica CataRomero - Panel Chatbot + Tienda</title>
+  <title>Mecánica CataRomero — Control Center Pro</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  
   <style>
     :root{
-      --bg:#0b1220;              /* modo oscuro por defecto */
-      --bg-soft:#111a2e;
-      --bg-card:#0f172a;
-      --primary:#1e88e5;        /* azul taller */
-      --primary-soft:#1e88e522;
-      --accent:#ffa726;         /* naranja técnico */
-      --ok:#0fb77a;
-      --warn:#f2b705;
-      --danger:#e53935;
-      --text:#e5e7eb;
-      --text-muted:#9aa4b2;
-      --border:#22304a;
-      --radius:18px;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --bg:#0b1220; --bg-soft:#111a2e; --card:#0f172a;
+      --primary:#2aa7ff; --accent:#ffb347;
+      --ok:#0fb77a; --warn:#f2b705; --danger:#ff4d5a;
+      --text:#e5e7eb; --muted:#9aa4b2; --border:#22304a;
+      --radius:14px; --shadow:0 8px 30px rgba(0,0,0,.35);
+      --sidebar:260px;
       --mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono";
     }
-    body[data-theme="light"]{
-      --bg:#f7f8fb;
-      --bg-soft:#eef2f9;
-      --bg-card:#ffffff;
-      --primary:#0f9daf;
-      --primary-soft:#0f9daf22;
-      --accent:#ffb347;
-      --text:#1f2933;
-      --text-muted:#6b7480;
-      --border:#e0e4ec;
-      --shadow:0 10px 30px rgba(15,40,80,.06);
-    }
-
     *{box-sizing:border-box;margin:0;padding:0;}
     body{
       font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(30,136,229,.12), transparent 40%),
-        radial-gradient(circle at bottom right, rgba(255,167,38,.10), transparent 45%),
+        radial-gradient(900px circle at 10% -10%, rgba(42,167,255,.18), transparent 55%),
+        radial-gradient(1100px circle at 110% 10%, rgba(255,179,71,.12), transparent 60%),
         var(--bg);
       color:var(--text);
       min-height:100vh;
     }
 
-    .app-layout{display:flex;min-height:100vh;}
+    .layout{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:100vh;}
 
-    /* SIDEBAR */
-    .sidebar{
-      width:270px; background:color-mix(in oklab, var(--bg-card) 88%, transparent);
+    /* Sidebar estilo GA */
+    aside{
+      background:#0c1426;
       border-right:1px solid var(--border);
-      padding:1.2rem; display:flex; flex-direction:column; gap:1.2rem;
-      backdrop-filter: blur(8px);
+      padding:1rem .8rem;
+      position:sticky;top:0;height:100vh;
+      display:flex;flex-direction:column;gap:.7rem;
     }
-    .brand{display:flex;align-items:center;gap:.8rem;}
-    .brand-logo{
-      width:44px;height:44px;border-radius:14px;
-      background:linear-gradient(135deg,var(--primary),#38b2ac);
-      display:grid;place-items:center;color:white;font-weight:900;
-      box-shadow:0 8px 18px rgba(30,136,229,.35);
-      letter-spacing:.08em;
-    }
-    .brand-title{font-weight:800;letter-spacing:.04em;}
-    .brand-subtitle{font-size:.8rem;color:var(--text-muted);}
+    .brand{display:flex;align-items:center;gap:.7rem;padding:.6rem;border-radius:12px;background:#0f1830;}
+    .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--primary),#58ffd7);color:#001018;font-weight:900;letter-spacing:.08em;}
+    .brand h1{font-size:1rem;font-weight:900;}
+    .brand small{color:var(--muted);}
 
-    .nav{display:flex;flex-direction:column;gap:.4rem;}
-    .nav-link{
-      border:none;background:transparent;text-align:left;
-      padding:.7rem .85rem;border-radius:12px;font-size:.95rem;
-      color:var(--text-muted);cursor:pointer;
-      display:flex;align-items:center;justify-content:space-between;
-      transition:background .15s,color .15s,transform .04s;
+    .nav{display:flex;flex-direction:column;gap:.25rem;margin-top:.3rem;}
+    .nav button{
+      border:none;background:transparent;color:var(--muted);text-align:left;
+      padding:.7rem .8rem;border-radius:10px;cursor:pointer;font-weight:700;
+      display:flex;justify-content:space-between;align-items:center;
+      transition:.12s;
     }
-    .nav-link:hover{background:var(--bg-soft); color:var(--text); transform:translateY(-1px);}
-    .nav-link.active{background:var(--primary-soft); color:var(--primary); font-weight:700;}
-    .nav-left{display:flex;gap:.6rem;align-items:center;}
-    .nav-ico{width:22px;text-align:center;font-size:1.05rem;}
+    .nav button:hover{background:var(--bg-soft);color:var(--text);}
+    .nav button.active{background:rgba(42,167,255,.12);color:var(--primary);}
+    .badge{background:#1f2d4a;color:#cfe3ff;font-size:.75rem;padding:.1rem .5rem;border-radius:999px;}
 
-    .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:.6rem;}
-    .sidebar-note{font-size:.8rem;color:var(--text-muted);line-height:1.3;}
-    .whatsapp-button{
-      display:inline-flex;justify-content:center;align-items:center;
-      padding:.6rem .9rem;border-radius:999px;
-      text-decoration:none;background:#25d366;color:#fff;
-      font-size:.9rem;font-weight:700;
-      box-shadow:0 6px 14px rgba(37,211,102,.45);
-    }
-    .theme-toggle{
-      border:1px solid var(--border); background:var(--bg-soft);
-      color:var(--text); font-weight:700;
-      padding:.55rem .8rem;border-radius:999px;cursor:pointer;
+    .side-footer{margin-top:auto;display:flex;flex-direction:column;gap:.5rem;}
+    .wsp-btn{
+      display:inline-flex;justify-content:center;align-items:center;width:100%;
+      padding:.65rem .9rem;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:900;
+      box-shadow:0 8px 18px rgba(37,211,102,.35);
     }
 
-    /* MAIN */
-    .main{flex:1;padding:1.6rem 1.8rem;display:flex;flex-direction:column;gap:1.2rem;}
-    .main-header{display:flex;justify-content:space-between;align-items:center;gap:1rem;}
-    .main-header h1{font-size:1.35rem;}
-    .subtitle{font-size:.9rem;color:var(--text-muted);}
+    /* Main */
+    main{padding:1rem 1.2rem 2rem;display:flex;flex-direction:column;gap:1rem;}
 
-    .user-badge{display:flex;align-items:center;gap:.6rem;}
-    .user-avatar{
-      width:36px;height:36px;border-radius:50%;
-      background:var(--primary-soft);color:var(--primary);
-      display:grid;place-items:center;font-weight:800;
+    /* Top bar GA */
+    .topbar{
+      background:var(--card);border:1px solid var(--border);border-radius:12px;
+      padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;
+      box-shadow:var(--shadow);
     }
-    .user-name{font-size:.9rem;font-weight:700;}
-    .user-role{font-size:.75rem;color:var(--text-muted);}
+    .search{flex:1;padding:.55rem .8rem;border-radius:999px;border:1px solid var(--border);
+      background:var(--bg-soft);color:var(--text);outline:none;}
+    .top-actions{display:flex;gap:.5rem;align-items:center;}
+    .btn{
+      border:none;border-radius:999px;padding:.55rem .9rem;font-weight:800;cursor:pointer;
+      background:var(--bg-soft);color:var(--text);border:1px solid var(--border);
+      transition:.12s;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{background:var(--primary);color:white;border-color:transparent;}
+    .btn.danger{background:var(--danger);color:white;border-color:transparent;}
+    .btn.outline{background:transparent;border-color:var(--primary);color:var(--primary);}
 
+    /* Sections */
     .section{display:none;}
     .section.visible{display:block;}
 
+    /* KPI cards */
+    .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.8rem;}
+    .kpi{
+      background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.8rem;
+      box-shadow:var(--shadow);display:flex;flex-direction:column;gap:.3rem;
+    }
+    .kpi .label{font-size:.8rem;color:var(--muted);font-weight:700;}
+    .kpi .value{font-size:1.5rem;font-weight:900;}
+    .kpi .value.accent{color:var(--accent);}
+
+    /* Grids */
+    .grid-3{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:1rem;}
+    .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;}
     .card{
-      background:var(--bg-card);
-      border-radius:var(--radius);
-      padding:1.05rem 1.2rem;
+      background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;
       box-shadow:var(--shadow);
-      border:1px solid var(--border);
     }
-    .card-header{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:.75rem;margin-bottom:.8rem;
-    }
-    .card-header h2{font-size:1rem;}
+    .card h3{font-size:.95rem;margin-bottom:.6rem;font-weight:900;}
+    .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
     .pill{
       font-size:.75rem;padding:.2rem .6rem;border-radius:999px;
-      background:var(--primary-soft);color:var(--primary);font-weight:700;
-    }
-    .pill-secondary{background:#4c6fff22;color:#8aa0ff;}
-    .pill-ok{background:rgba(15,183,122,.12);color:var(--ok);}
-    .pill-alert{background:rgba(229,57,53,.12);color:var(--danger);}
-
-    .grid-cards{
-      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:1rem;margin-bottom:1rem;
-    }
-    .grid-main{
-      display:grid;grid-template-columns:2fr 1.4fr;gap:1rem;
+      background:rgba(42,167,255,.12);color:var(--primary);font-weight:900;
     }
 
-    .kpi-card{display:flex;flex-direction:column;gap:.25rem;}
-    .kpi-label{font-size:.8rem;color:var(--text-muted);}
-    .kpi-value{font-size:1.6rem;font-weight:900;}
-    .kpi-value.alert{color:var(--danger);}
-
-    .toolbar{
-      display:flex;justify-content:space-between;align-items:center;
-      gap:.6rem;margin-bottom:.6rem;
-    }
-    .search-input{
-      flex:1;padding:.5rem .8rem;border-radius:999px;
-      border:1px solid var(--border);background:var(--bg-soft);
-      font-size:.85rem;color:var(--text);
-      outline:none;
-    }
-    .tag-filter{
-      padding:.35rem .7rem;border-radius:999px;
-      border:1px solid var(--border);background:var(--bg-soft);
-      font-size:.78rem;cursor:pointer;color:var(--text-muted);font-weight:700;
-    }
-    .tag-filter.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);}
-
-    table{width:100%;border-collapse:collapse;font-size:.85rem;}
-    th,td{
-      text-align:left;padding:.55rem .45rem;border-bottom:1px solid var(--border);
-      white-space:nowrap;
-    }
-    th{
-      font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;
-      color:var(--text-muted);
-    }
+    /* Tables */
+    .table-wrap{width:100%;overflow:auto;border-radius:10px;border:1px solid var(--border);}
+    table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:760px;}
+    th,td{padding:.55rem .45rem;border-bottom:1px solid var(--border);white-space:nowrap;}
+    th{color:var(--muted);text-transform:uppercase;font-size:.75rem;letter-spacing:.05em;}
     tbody tr:hover{background:var(--bg-soft);cursor:pointer;}
 
-    .detail{display:flex;flex-direction:column;gap:.8rem;}
-    .detail-section h3{font-size:.9rem;margin-bottom:.3rem;}
-    .detail-section p,.detail-list{font-size:.85rem;}
-    .detail-list{list-style:none;}
-    .detail-list li{padding:.3rem 0;border-bottom:1px dashed var(--border);}
+    .st{font-weight:900;font-size:.75rem;padding:.15rem .5rem;border-radius:999px;}
+    .st.ok{background:rgba(15,183,122,.12);color:var(--ok);}
+    .st.alert{background:rgba(255,77,90,.10);color:var(--danger);}
+    .st.rev{background:rgba(242,183,5,.12);color:var(--warn);}
 
-    .detail-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem;}
-    .btn-primary,.btn-outline,.btn-danger{
-      padding:.5rem .9rem;border-radius:999px;font-size:.85rem;font-weight:800;
-      cursor:pointer;border:none;
+    /* Forms */
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;}
+    .field{display:flex;flex-direction:column;gap:.25rem;}
+    .field label{font-size:.8rem;color:var(--muted);font-weight:800;}
+    .field input,.field select,.field textarea{
+      border:1px solid var(--border);background:var(--bg-soft);color:var(--text);
+      padding:.5rem .7rem;border-radius:10px;outline:none;font-size:.9rem;
     }
-    .btn-primary{background:var(--primary);color:white;}
-    .btn-outline{background:transparent;border:1px solid var(--primary);color:var(--primary);}
-    .btn-danger{background:var(--danger);color:white;}
-    .btn-outline:hover{background:var(--primary-soft);}
+    .field textarea{min-height:80px;resize:vertical;}
+    .form-actions{display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap;}
 
-    /* FORM */
-    .form-grid{
-      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;
+    /* Modal */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;z-index:50;
+      padding:1rem;
     }
-    .form-field{display:flex;flex-direction:column;gap:.3rem;}
-    .form-field label{font-size:.8rem;color:var(--text-muted);font-weight:800;}
-    .form-field input,.form-field textarea,.form-field select{
-      border:1px solid var(--border);background:var(--bg-soft);
-      padding:.5rem .7rem;border-radius:10px;color:var(--text);font-size:.9rem;outline:none;
+    .modal{
+      width:min(920px,100%);background:var(--card);border:1px solid var(--border);
+      border-radius:14px;box-shadow:var(--shadow);padding:1rem;
     }
-    .form-field textarea{min-height:80px;resize:vertical;}
-    .form-actions{display:flex;gap:.5rem;margin-top:.8rem;}
-
-    /* PRODUCTOS */
-    .product-grid{
-      display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;
-    }
-    .product-card{
-      background:var(--bg-card);border:1px solid var(--border);
-      border-radius:16px;box-shadow:var(--shadow);padding:.9rem;
-      display:flex;flex-direction:column;gap:.6rem;
-    }
-    .product-img{
-      width:100%;aspect-ratio:16/9;border-radius:12px;object-fit:cover;
-      background:var(--bg-soft);border:1px solid var(--border);
-    }
-    .product-title{font-weight:900;}
-    .product-meta{font-size:.8rem;color:var(--text-muted);}
-    .product-price{font-weight:900;font-size:1.1rem;color:var(--accent);}
-    .product-stock{font-size:.8rem;}
-    .product-actions{display:flex;gap:.4rem;margin-top:auto;}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+    .modal-head h3{margin:0;}
 
     .empty{
-      font-size:.9rem;color:var(--text-muted);padding:.8rem;text-align:center;
-      border:1px dashed var(--border);border-radius:12px;background:var(--bg-soft);
+      color:var(--muted);font-size:.9rem;padding:.6rem;border:1px dashed var(--border);
+      border-radius:10px;background:var(--bg-soft);text-align:center;
     }
 
-    @media(max-width:1100px){
-      .grid-cards{grid-template-columns:repeat(2,1fr);}
-      .grid-main{grid-template-columns:1fr;}
-      .product-grid{grid-template-columns:repeat(2,1fr);}
+    @media(max-width:1200px){
+      .kpi-grid{grid-template-columns:repeat(3,1fr);}
+      .grid-3{grid-template-columns:1fr;}
+      .grid-2{grid-template-columns:1fr;}
     }
-    @media(max-width:720px){
-      .app-layout{flex-direction:column;}
-      .sidebar{width:100%;flex-direction:row;align-items:center;flex-wrap:wrap;}
-      .nav{flex-direction:row;flex-wrap:wrap;}
-      .main{padding:1rem;}
-      .product-grid{grid-template-columns:1fr;}
+    @media(max-width:820px){
+      .layout{grid-template-columns:1fr;}
+      aside{height:auto;position:relative;}
+      table{min-width:680px;}
       .form-grid{grid-template-columns:1fr;}
-      .main-header{flex-direction:column;align-items:flex-start;}
     }
   </style>
 </head>
 
-<body data-theme="dark">
-<div class="app-layout">
-  <aside class="sidebar">
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside>
     <div class="brand">
-      <div class="brand-logo">MC</div>
+      <div class="logo">MC</div>
       <div>
-        <div class="brand-title">Mecánica CataRomero</div>
-        <div class="brand-subtitle">Panel Chatbot + Tienda</div>
+        <h1>Mecánica CataRomero</h1>
+        <small>Control Center Pro</small>
       </div>
     </div>
 
-    <nav class="nav">
-      <button class="nav-link active" data-section="dashboard">
-        <span class="nav-left"><span class="nav-ico">🔧</span>Dashboard</span>
-      </button>
-      <button class="nav-link" data-section="clients">
-        <span class="nav-left"><span class="nav-ico">🚗</span>Clientes</span>
-      </button>
-      <button class="nav-link" data-section="verification">
-        <span class="nav-left"><span class="nav-ico">🔍</span>Buscar informe</span>
-      </button>
-      <button class="nav-link" data-section="store">
-        <span class="nav-left"><span class="nav-ico">🛒</span>Tienda / Productos</span>
-      </button>
-    </nav>
+    <div class="nav">
+      <button class="active" data-section="overview">Overview</button>
+      <button data-section="reports">Informes Chatbot <span class="badge" id="b-reports">0</span></button>
+      <button data-section="appointments">Citas / Agenda <span class="badge" id="b-appointments">0</span></button>
+      <button data-section="store">Tienda / Productos</button>
+      <button data-section="quotes">Cotizaciones <span class="badge" id="b-quotes">0</span></button>
+      <button data-section="invoices">Facturas <span class="badge" id="b-invoices">0</span></button>
+      <button data-section="clients">Clientes</button>
+      <button data-section="vehicles">Vehículos</button>
+      <button data-section="settings">Configuración</button>
+    </div>
 
-    <div class="sidebar-footer">
-      <p class="sidebar-note">
-        Panel interno del taller. Informes y productos sincronizados con Supabase.
-      </p>
-      <button id="theme-toggle" class="theme-toggle">🌙 / ☀️ Cambiar tema</button>
-      <a class="whatsapp-button" id="global-whatsapp-btn" target="_blank" rel="noopener">
-        Abrir chatbot en WhatsApp
+    <div class="side-footer">
+      <a id="globalWspBtn" class="wsp-btn" target="_blank" rel="noopener">
+        Abrir Chatbot WhatsApp
       </a>
     </div>
   </aside>
 
-  <main class="main">
-    <header class="main-header">
-      <div>
-        <h1>Panel de Informes y Tienda</h1>
-        <p class="subtitle">Seguimiento técnico y catálogo de repuestos/servicios.</p>
-      </div>
-      <div class="user-badge">
-        <div class="user-avatar">S</div>
-        <div>
-          <div class="user-name">Supervisor Taller</div>
-          <div class="user-role">Administrador</div>
-        </div>
-      </div>
-    </header>
+  <!-- MAIN -->
+  <main>
 
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="section visible">
-      <div class="grid-cards">
-        <div class="card kpi-card">
-          <span class="kpi-label">Informes totales</span>
-          <span class="kpi-value" id="kpi-total">0</span>
-          <span class="subtitle" id="kpi-total-caption">Cargando...</span>
-        </div>
-        <div class="card kpi-card">
-          <span class="kpi-label">Informes OK</span>
-          <span class="kpi-value" id="kpi-ok">0</span>
-          <span class="subtitle">Dentro de rango recomendado.</span>
-        </div>
-        <div class="card kpi-card">
-          <span class="kpi-label">Alertas</span>
-          <span class="kpi-value alert" id="kpi-alertas">0</span>
-          <span class="subtitle">Requieren revisión.</span>
-        </div>
-        <div class="card kpi-card">
-          <span class="kpi-label">Clientes únicos</span>
-          <span class="kpi-value" id="kpi-clientes">0</span>
-          <span class="subtitle">Por teléfono WhatsApp.</span>
-        </div>
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <input class="search" id="globalSearch" placeholder="Buscar patente, cliente, factura, cotización..." />
+      <div class="top-actions">
+        <button class="btn" data-range="today">Hoy</button>
+        <button class="btn" data-range="7d">7 días</button>
+        <button class="btn" data-range="30d">30 días</button>
+        <button class="btn primary" id="btnNewAppointment">+ Nueva Cita</button>
+        <button class="btn" id="btnNewQuote">+ Cotización</button>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="section visible">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">Informes totales</div><div class="value" id="k-total">0</div></div>
+        <div class="kpi"><div class="label">Informes OK</div><div class="value" id="k-ok">0</div></div>
+        <div class="kpi"><div class="label">Alertas</div><div class="value" id="k-alert">0</div></div>
+        <div class="kpi"><div class="label">Citas próximas</div><div class="value" id="k-appt">0</div></div>
+        <div class="kpi"><div class="label">Cotizaciones pendientes</div><div class="value" id="k-quotes">0</div></div>
+        <div class="kpi"><div class="label">Ventas mes (CLP)</div><div class="value accent" id="k-sales">$0</div></div>
       </div>
 
-      <div class="grid-main">
+      <div class="grid-3" style="margin-top:1rem;">
         <div class="card">
-          <div class="card-header">
-            <h2>Informes recientes</h2>
-            <span class="pill">Últimos registros</span>
+          <h3>OK vs Alertas</h3>
+          <div style="height:220px;"><canvas id="chartStatus"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Tendencia diagnósticos</h3>
+          <div style="height:220px;"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Componentes con más fallas</h3>
+          <div style="height:220px;"><canvas id="chartComponents"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top:1rem;">
+        <div class="card">
+          <div class="card-head"><h3>Últimos informes</h3><span class="pill">recientes</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Patente</th><th>Vehículo</th><th>Estado</th></tr></thead>
+              <tbody id="lastReports"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Próximas citas</h3><span class="pill">agenda</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Patente</th><th>Estado</th></tr></thead>
+              <tbody id="nextAppointments"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Últimas facturas</h3><span class="pill">ventas</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Pago</th></tr></thead>
+              <tbody id="lastInvoices"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INFORMES -->
+    <section id="reports" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h3>Informes Chatbot</h3>
+            <span class="pill">vw_reports_full</span>
           </div>
 
-          <div class="toolbar">
-            <input id="search-input" class="search-input" type="text"
-              placeholder="Buscar por patente, teléfono, chat ID, marca/modelo o mecánico..." />
-            <button class="tag-filter active" data-filter="all">Todos</button>
-            <button class="tag-filter" data-filter="ok">Solo OK</button>
-            <button class="tag-filter" data-filter="alert">Solo alertas</button>
+          <div style="display:flex;gap:.5rem;margin-bottom:.6rem;">
+            <input id="reportsSearch" class="search" placeholder="Patente, teléfono, marca, mecánico…" />
+            <select id="reportsFilter" class="btn">
+              <option value="all">Todos</option>
+              <option value="ok">Solo OK</option>
+              <option value="alert">Solo Alertas</option>
+            </select>
           </div>
 
-          <div class="table-wrapper">
+          <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Patente</th>
-                  <th>Vehículo</th>
-                  <th>Cliente</th>
-                  <th>Mecánico</th>
-                  <th>Estado</th>
-                  <th>Medición</th>
+                  <th>Fecha</th><th>Patente</th><th>Vehículo</th><th>Cliente</th><th>Mecánico</th><th>Estado</th>
                 </tr>
               </thead>
-              <tbody id="reports-body"></tbody>
+              <tbody id="reportsBody"></tbody>
             </table>
           </div>
-
-          <div id="reports-empty" class="empty" style="display:none;margin-top:.7rem;">
-            No hay informes todavía.
-          </div>
+          <div id="reportsEmpty" class="empty" style="display:none;margin-top:.7rem;">No hay informes.</div>
         </div>
 
         <div class="card">
-          <div class="card-header">
-            <h2>Detalle del informe</h2>
-            <span class="pill pill-secondary" id="detail-label">Selecciona un registro</span>
+          <div class="card-head"><h3>Detalle técnico</h3><span class="pill" id="repDetailLabel">Selecciona uno</span></div>
+          <div id="repDetailEmpty" class="empty">Haz clic en un informe para ver detalle IA.</div>
+
+          <div id="repDetail" style="display:none;gap:.6rem;flex-direction:column;">
+            <div><b>Fecha:</b> <span id="rdFecha"></span></div>
+            <div><b>Cliente:</b> <span id="rdCliente"></span> — <span id="rdTel"></span></div>
+            <div><b>Vehículo:</b> <span id="rdVeh"></span> — <b>Patente:</b> <span id="rdPat"></span></div>
+            <div><b>Componente:</b> <span id="rdComp"></span></div>
+            <div><b>Medición:</b> <span id="rdMed"></span></div>
+            <div><b>Advertencia:</b> <span id="rdAdv"></span></div>
+            <div><b>Mecánico:</b> <span id="rdMec"></span></div>
+            <hr style="border-color:var(--border)">
+            <div><b>Análisis IA:</b><br><div id="rdIA" style="color:var(--muted);line-height:1.45;"></div></div>
+            <div><b>Recomendación:</b><br><div id="rdObs" style="color:var(--muted);line-height:1.45;"></div></div>
+
+            <div class="form-actions">
+              <button class="btn outline" id="btnRDWhatsapp">Abrir WhatsApp Cliente</button>
+              <button class="btn primary" id="btnFromReportQuote">Cotizar desde informe</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CITAS -->
+    <section id="appointments" class="section">
+      <div class="card">
+        <div class="card-head">
+          <h3>Agenda de Citas</h3>
+          <div style="display:flex;gap:.5rem;">
+            <button class="btn primary" id="btnApptNew2">+ Nueva cita</button>
+            <button class="btn" id="btnApptRefresh">Actualizar</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Inicio</th><th>Cliente</th><th>Patente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr>
+            </thead>
+            <tbody id="apptBody"></tbody>
+          </table>
+        </div>
+        <div id="apptEmpty" class="empty" style="display:none;margin-top:.7rem;">No hay citas.</div>
+      </div>
+    </section>
+
+    <!-- TIENDA -->
+    <section id="store" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h3>Productos</h3>
+            <div style="display:flex;gap:.5rem;">
+              <button class="btn primary" id="btnProdNew">+ Producto</button>
+              <button class="btn" id="btnProdRefresh">Actualizar</button>
+            </div>
           </div>
 
-          <div id="detail-placeholder">
-            <p class="subtitle">Haz clic en un informe para ver el detalle técnico.</p>
+          <input id="prodSearch" class="search" placeholder="Buscar producto..." style="margin-bottom:.6rem;" />
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Nombre</th><th>Categoría</th><th>Marca</th><th>Precio</th><th>Stock</th><th>Activo</th><th></th></tr>
+              </thead>
+              <tbody id="prodBody"></tbody>
+            </table>
+          </div>
+          <div id="prodEmpty" class="empty" style="display:none;margin-top:.7rem;">No hay productos.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3 id="prodFormTitle">Crear producto</h3><span class="pill">stc_products</span></div>
+
+          <form id="prodForm">
+            <input type="hidden" id="prodId">
+            <div class="form-grid">
+              <div class="field"><label>Nombre</label><input id="pNombre" required></div>
+              <div class="field"><label>Precio</label><input id="pPrecio" type="number" step="0.01" required></div>
+              <div class="field"><label>Categoría</label><input id="pCat"></div>
+              <div class="field"><label>Marca</label><input id="pMarca"></div>
+              <div class="field"><label>Stock</label><input id="pStock" type="number" required></div>
+              <div class="field"><label>Imagen URL</label><input id="pImg"></div>
+              <div class="field" style="grid-column:1/-1;"><label>Descripción</label><textarea id="pDesc"></textarea></div>
+              <div class="field"><label>Activo</label>
+                <select id="pActivo"><option value="true">Sí</option><option value="false">No</option></select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn primary">Guardar</button>
+              <button class="btn" type="button" id="btnProdClear">Limpiar</button>
+              <button class="btn danger" type="button" id="btnProdDelete" style="display:none;">Eliminar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- COTIZACIONES -->
+    <section id="quotes" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h3>Cotizaciones</h3>
+            <div style="display:flex;gap:.5rem;">
+              <button class="btn primary" id="btnQuoteNew">+ Cotización</button>
+              <button class="btn" id="btnQuoteRefresh">Actualizar</button>
+            </div>
           </div>
 
-          <div id="detail-content" class="detail" style="display:none;">
-            <div class="detail-section">
-              <h3>Datos generales</h3>
-              <p><strong>Fecha:</strong> <span id="d-fecha"></span></p>
-              <p><strong>Patente:</strong> <span id="d-patente"></span></p>
-              <p><strong>Vehículo:</strong> <span id="d-vehiculo"></span></p>
-              <p><strong>Kilometraje:</strong> <span id="d-km"></span></p>
-              <p><strong>Motor:</strong> <span id="d-motor"></span></p>
-              <p><strong>Mecánico:</strong> <span id="d-mecanico"></span></p>
-              <p><strong>Cliente:</strong>
-                <span id="d-cliente-nombre"></span> –
-                <span id="d-cliente"></span>
-              </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Fecha</th><th>Cliente</th><th>Patente</th><th>Estado</th><th>Total</th><th></th></tr>
+              </thead>
+              <tbody id="quoteBody"></tbody>
+            </table>
+          </div>
+          <div id="quoteEmpty" class="empty" style="display:none;margin-top:.7rem;">No hay cotizaciones.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3 id="quoteFormTitle">Nueva cotización</h3><span class="pill">stc_quotes</span></div>
+
+          <form id="quoteForm">
+            <input type="hidden" id="quoteId">
+            <div class="form-grid">
+              <div class="field">
+                <label>Cliente</label>
+                <select id="qClient" required></select>
+              </div>
+              <div class="field">
+                <label>Vehículo</label>
+                <select id="qVehicle"></select>
+              </div>
+              <div class="field">
+                <label>Informe (opcional)</label>
+                <select id="qReport"></select>
+              </div>
+              <div class="field">
+                <label>Estado</label>
+                <select id="qEstado">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="enviada">Enviada</option>
+                  <option value="aceptada">Aceptada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+              </div>
+              <div class="field" style="grid-column:1/-1;">
+                <label>Nota</label>
+                <textarea id="qNota"></textarea>
+              </div>
             </div>
 
-            <div class="detail-section">
-              <h3>Componente analizado</h3>
-              <ul class="detail-list">
-                <li><strong>Componente:</strong> <span id="d-componente"></span></li>
-                <li><strong>Medición:</strong> <span id="d-medicion"></span></li>
-                <li><strong>Advertencia:</strong> <span id="d-advertencia"></span></li>
-                <li><strong>Estado:</strong> <span id="d-estado"></span></li>
-              </ul>
+            <div class="form-actions">
+              <button class="btn primary">Guardar cabecera</button>
+              <button class="btn" type="button" id="btnQuoteClear">Limpiar</button>
+              <button class="btn danger" type="button" id="btnQuoteDelete" style="display:none;">Eliminar</button>
+            </div>
+          </form>
+
+          <hr style="border-color:var(--border);margin:.8rem 0;">
+
+          <div class="card-head"><h3>Items cotización</h3></div>
+
+          <form id="quoteItemForm" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <select id="qiProduct" class="btn" style="min-width:220px;"></select>
+            <input id="qiDesc" class="search" placeholder="Descripción" style="flex:1;min-width:160px;">
+            <input id="qiQty" class="search" type="number" step="0.01" value="1" style="width:110px;">
+            <input id="qiPrice" class="search" type="number" step="0.01" value="0" style="width:140px;">
+            <button class="btn primary" type="submit">Agregar</button>
+          </form>
+
+          <div class="table-wrap" style="margin-top:.6rem;">
+            <table>
+              <thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
+              <tbody id="quoteItemsBody"></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:.6rem;font-size:.95rem;">
+            <b>Subtotal:</b> <span id="qSub">0</span> |
+            <b>IVA:</b> <span id="qIva">0</span> |
+            <b>Total:</b> <span id="qTot">0</span>
+          </div>
+
+          <div class="form-actions" style="margin-top:.6rem;">
+            <button class="btn outline" type="button" id="btnQuoteWhatsapp">Enviar por WhatsApp</button>
+            <button class="btn primary" type="button" id="btnQuoteToInvoice">Convertir a factura</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FACTURAS -->
+    <section id="invoices" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h3>Facturas</h3>
+            <button class="btn" id="btnInvRefresh">Actualizar</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Fecha</th><th>Folio</th><th>Cliente</th><th>Total</th><th>Pago</th><th></th></tr>
+              </thead>
+              <tbody id="invBody"></tbody>
+            </table>
+          </div>
+          <div id="invEmpty" class="empty" style="display:none;margin-top:.7rem;">No hay facturas.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3 id="invFormTitle">Factura</h3><span class="pill">stc_invoices</span></div>
+
+          <form id="invForm">
+            <input type="hidden" id="invId">
+            <div class="form-grid">
+              <div class="field"><label>Folio</label><input id="iFolio" placeholder="FAC-0001"></div>
+              <div class="field">
+                <label>Estado pago</label>
+                <select id="iPago">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="pagada">Pagada</option>
+                  <option value="parcial">Parcial</option>
+                </select>
+              </div>
+              <div class="field"><label>Cliente</label><select id="iClient" required></select></div>
+              <div class="field"><label>Vehículo</label><select id="iVehicle"></select></div>
+              <div class="field" style="grid-column:1/-1;"><label>Nota</label><textarea id="iNota"></textarea></div>
             </div>
 
-            <div class="detail-section">
-              <h3>Análisis técnico (IA)</h3>
-              <p id="d-analisis"></p>
+            <div class="form-actions">
+              <button class="btn primary">Guardar factura</button>
+              <button class="btn danger" type="button" id="btnInvDelete" style="display:none;">Eliminar</button>
             </div>
+          </form>
 
-            <div class="detail-section">
-              <h3>Recomendaciones taller</h3>
-              <p id="d-obs"></p>
-            </div>
+          <hr style="border-color:var(--border);margin:.8rem 0;">
 
-            <div class="detail-actions">
-              <button id="btn-open-whatsapp" class="btn-outline">Abrir chat WhatsApp</button>
-            </div>
+          <div class="card-head"><h3>Items factura</h3></div>
+          <form id="invItemForm" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <select id="iiProduct" class="btn" style="min-width:220px;"></select>
+            <input id="iiDesc" class="search" placeholder="Descripción" style="flex:1;min-width:160px;">
+            <input id="iiQty" class="search" type="number" step="0.01" value="1" style="width:110px;">
+            <input id="iiPrice" class="search" type="number" step="0.01" value="0" style="width:140px;">
+            <button class="btn primary" type="submit">Agregar</button>
+          </form>
+
+          <div class="table-wrap" style="margin-top:.6rem;">
+            <table>
+              <thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
+              <tbody id="invItemsBody"></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:.6rem;font-size:.95rem;">
+            <b>Subtotal:</b> <span id="iSub">0</span> |
+            <b>IVA:</b> <span id="iIva">0</span> |
+            <b>Total:</b> <span id="iTot">0</span>
+          </div>
+
+          <div class="form-actions" style="margin-top:.6rem;">
+            <button class="btn outline" type="button" id="btnInvWhatsapp">Enviar por WhatsApp</button>
           </div>
         </div>
       </div>
@@ -416,627 +581,983 @@
     <!-- CLIENTES -->
     <section id="clients" class="section">
       <div class="card">
-        <div class="card-header">
-          <h2>Clientes</h2>
-          <span class="pill">Agrupado por teléfono</span>
-        </div>
-        <div class="table-wrapper">
+        <div class="card-head"><h3>Clientes</h3><span class="pill">vw_clients_resumen</span></div>
+        <div class="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>Teléfono</th>
-                <th>Nombre</th>
-                <th>Patentes</th>
-                <th>Informes</th>
-                <th>Último informe</th>
-                <th>Último mecánico</th>
-              </tr>
-            </thead>
-            <tbody id="clients-body"></tbody>
+            <thead><tr><th>Teléfono</th><th>Nombre</th><th>Patentes</th><th>Informes</th><th>Último</th></tr></thead>
+            <tbody id="clientsBody"></tbody>
           </table>
         </div>
-        <div id="clients-empty" class="empty" style="display:none;margin-top:.7rem;">
-          No hay clientes todavía.
-        </div>
       </div>
     </section>
 
-    <!-- BUSCAR INFORME -->
-    <section id="verification" class="section">
+    <!-- VEHÍCULOS -->
+    <section id="vehicles" class="section">
       <div class="card">
-        <div class="card-header">
-          <h2>Buscar informe</h2>
-          <span class="pill">Patente, teléfono o chat ID</span>
-        </div>
-
-        <div class="form-grid" style="margin-bottom:.8rem;">
-          <div class="form-field">
-            <label for="verification-code">Código</label>
-            <input id="verification-code" type="text"
-                   placeholder="Ej: ABCD11 / +569... / chat id" />
-          </div>
-          <div class="form-field" style="align-self:end;">
-            <button id="btn-verify" class="btn-primary">Buscar</button>
-          </div>
-        </div>
-
-        <div id="verification-result" style="display:none;">
-          <h3 style="margin:.5rem 0;">Resultado</h3>
-          <p><strong>Coincidencias:</strong> <span id="v-count"></span></p>
-          <p><strong>Última fecha:</strong> <span id="v-fecha"></span></p>
-          <p><strong>Vehículo:</strong> <span id="v-vehiculo"></span></p>
-          <p><strong>Estado:</strong> <span id="v-estado"></span></p>
-          <p><strong>Resumen:</strong> <span id="v-resumen"></span></p>
-        </div>
-
-        <div id="verification-empty" class="empty">
-          Ingresa un código para buscar informes asociados.
+        <div class="card-head"><h3>Vehículos</h3><span class="pill">stc_vehicles</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Patente</th><th>Cliente</th><th>Marca</th><th>Modelo</th><th>Año</th><th>KM</th></tr></thead>
+            <tbody id="vehBody"></tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- TIENDA -->
-    <section id="store" class="section">
-      <div class="grid-main">
-        <div class="card">
-          <div class="card-header">
-            <h2>Productos</h2>
-            <span class="pill">Supabase: stc_products</span>
-          </div>
-
-          <div class="toolbar">
-            <input id="product-search" class="search-input" type="text"
-                   placeholder="Buscar por nombre, categoría o marca..." />
-            <button id="btn-refresh-products" class="btn-outline">Actualizar</button>
-          </div>
-
-          <div id="products-grid" class="product-grid"></div>
-          <div id="products-empty" class="empty" style="display:none;margin-top:.7rem;">
-            No hay productos aún. Crea uno en el formulario.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2 id="product-form-title">Crear producto</h2>
-            <span class="pill pill-secondary">Admin tienda</span>
-          </div>
-
-          <form id="product-form">
-            <input type="hidden" id="product-id" />
-
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Nombre</label>
-                <input id="p-nombre" required placeholder="Ej: Cambio de aceite 10W40" />
-              </div>
-
-              <div class="form-field">
-                <label>Precio (CLP)</label>
-                <input id="p-precio" type="number" step="0.01" required />
-              </div>
-
-              <div class="form-field">
-                <label>Categoría</label>
-                <input id="p-categoria" placeholder="Ej: Aceites / Frenos / Servicio" />
-              </div>
-
-              <div class="form-field">
-                <label>Marca</label>
-                <input id="p-marca" placeholder="Ej: Mobil / Bosch / Taller" />
-              </div>
-
-              <div class="form-field">
-                <label>Stock</label>
-                <input id="p-stock" type="number" required />
-              </div>
-
-              <div class="form-field">
-                <label>Imagen URL</label>
-                <input id="p-imagen" placeholder="https://..." />
-              </div>
-
-              <div class="form-field" style="grid-column:1/-1;">
-                <label>Descripción</label>
-                <textarea id="p-descripcion" placeholder="Detalle del producto o servicio"></textarea>
-              </div>
-
-              <div class="form-field">
-                <label>Activo</label>
-                <select id="p-activo">
-                  <option value="true">Sí</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button class="btn-primary" type="submit" id="btn-save-product">Guardar</button>
-              <button class="btn-outline" type="button" id="btn-clear-product">Limpiar</button>
-              <button class="btn-danger" type="button" id="btn-delete-product" style="display:none;">Eliminar</button>
-            </div>
-          </form>
-
-          <p class="subtitle" style="margin-top:.6rem;">
-            Consejo: puedes usar esto para vender repuestos o “servicios” (alineación, scanner, mantención, etc).
-          </p>
-        </div>
+    <!-- SETTINGS -->
+    <section id="settings" class="section">
+      <div class="card">
+        <h3>Configuración</h3>
+        <p style="color:var(--muted);font-size:.95rem;">
+          Aquí después metemos: horarios disponibles del taller, servicios, mecánicos, reglas del bot.
+        </p>
       </div>
     </section>
+
   </main>
 </div>
 
+<!-- MODAL NUEVA CITA -->
+<div class="modal-backdrop" id="apptModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Nueva cita</h3>
+      <button class="btn" onclick="UI.close('apptModal')">Cerrar</button>
+    </div>
+
+    <form id="apptForm">
+      <div class="form-grid">
+        <div class="field"><label>Cliente</label><select id="aClient" required></select></div>
+        <div class="field"><label>Vehículo</label><select id="aVehicle"></select></div>
+        <div class="field"><label>Inicio</label><input id="aInicio" type="datetime-local" required></div>
+        <div class="field"><label>Fin</label><input id="aFin" type="datetime-local"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Motivo</label><textarea id="aMotivo"></textarea></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary">Guardar cita</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
-  // ==========================
-  // CONFIG SUPABASE (CAMBIA ESTO)
-  // ==========================
-  const SUPABASE_URL = "https://nyyzuqykkrlznvtmaxrm.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55eXp1cXlra3Jsem52dG1heHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MTQwMTMsImV4cCI6MjA3ODk5MDAxM30.LCVgOYa_7T-fBclBte9asGD-EGZIDShtNZcoNF5e2CM";
+/* ======================
+   CONFIG SUPABASE
+   ====================== */
+const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
+const SUPABASE_ANON_KEY = "TU-ANON-KEY";
+const sb = SUPABASE_URL.includes("TU-PROYECTO")
+  ? null
+  : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let supabaseClient = null;
-  if (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("Mecanica")) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
+/* WhatsApp */
+const DEFAULT_WSP_PHONE="569XXXXXXXX";
+function buildWhatsappUrl(msg, phone){
+  const p=(phone||DEFAULT_WSP_PHONE).replace(/[+ ]/g,"");
+  return `https://wa.me/${p}?text=${encodeURIComponent(msg)}`;
+}
+document.getElementById("globalWspBtn").href =
+  buildWhatsappUrl("Hola, quiero generar un informe técnico con el chatbot de Mecánica CataRomero.");
 
-  // WhatsApp bot
-  const DEFAULT_WSP_PHONE = "56936239379";
-  function buildWhatsappUrl(message, phoneOverride){
-    const phone = (phoneOverride || DEFAULT_WSP_PHONE).replace(/[+ ]/g, "");
-    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+/* ======================
+   UI helpers
+   ====================== */
+const UI = {
+  open(id){ document.getElementById(id).style.display="flex"; },
+  close(id){ document.getElementById(id).style.display="none"; },
+  money(n){ return "$"+Number(n||0).toLocaleString("es-CL"); },
+  fmtDate(ts){ return new Date(ts).toLocaleString("es-CL"); },
+  toLocalInput(ts){
+    if(!ts) return "";
+    const d=new Date(ts);
+    const off=d.getTimezoneOffset();
+    const local=new Date(d.getTime()-off*60000);
+    return local.toISOString().slice(0,16);
   }
-  const globalWhatsappBtn = document.getElementById("global-whatsapp-btn");
-  if (globalWhatsappBtn){
-    globalWhatsappBtn.href = buildWhatsappUrl(
-      "Hola, quiero generar un informe técnico con el chatbot de Mecánica CataRomero."
-    );
-  }
+}
 
-  // ==========================
-  // UI: NAV + THEME
-  // ==========================
-  const navLinks = document.querySelectorAll(".nav-link");
-  const sections = document.querySelectorAll(".section");
-  navLinks.forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const id = btn.dataset.section;
-      navLinks.forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      sections.forEach(s=>s.classList.toggle("visible", s.id===id));
-    });
+/* navigation */
+const navBtns=[...document.querySelectorAll(".nav button")];
+const sections=[...document.querySelectorAll(".section")];
+navBtns.forEach(b=>{
+  b.onclick=()=>{
+    navBtns.forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    const id=b.dataset.section;
+    sections.forEach(s=>s.classList.toggle("visible", s.id===id));
+  }
+});
+
+/* ======================
+   Global state
+   ====================== */
+let reports=[], filters={range:"30d"};
+let clients=[], vehicles=[], products=[];
+let quotes=[], quoteItemsById={}, selectedQuote=null;
+let invoices=[], invItemsById={}, selectedInvoice=null;
+let selectedReport=null;
+
+/* ======================
+   Status compute
+   ====================== */
+function computeStatus(r){
+  const adv=(r.advertencia||"").toLowerCase();
+  if(!adv) return "SIN DATO";
+  if(adv.includes("dentro")||adv.includes("recomendado")) return "OK";
+  if(adv.includes("por encima")||adv.includes("por debajo")||adv.includes("fuera")) return "ALERTA";
+  return "REVISAR";
+}
+function statusClass(st){
+  if(st==="OK") return "ok";
+  if(st==="ALERTA") return "alert";
+  return "rev";
+}
+
+/* ======================
+   Load base catalogs
+   ====================== */
+async function loadClientsVehiclesProducts(){
+  if(!sb) return;
+
+  const c = await sb.from("stc_clients").select("*").order("created_at",{ascending:false});
+  clients=c.data||[];
+
+  const v = await sb.from("stc_vehicles").select("*").order("created_at",{ascending:false});
+  vehicles=v.data||[];
+
+  const p = await sb.from("stc_products").select("*").order("created_at",{ascending:false});
+  products=p.data||[];
+
+  fillClientSelects();
+  renderClients();
+  renderVehicles();
+  renderProducts();
+}
+
+/* fill selects */
+function fillClientSelects(){
+  const clientSelects=["aClient","qClient","iClient"];
+  clientSelects.forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML=`<option value="">-- Selecciona cliente --</option>`+
+      clients.map(c=>`<option value="${c.id}">${c.nombre||"Sin nombre"} • ${c.telefono}</option>`).join("");
   });
 
-  const themeToggle = document.getElementById("theme-toggle");
-  themeToggle.addEventListener("click", ()=>{
-    const body = document.body;
-    body.dataset.theme = body.dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem("mc_theme", body.dataset.theme);
-  });
-  const savedTheme = localStorage.getItem("mc_theme");
-  if (savedTheme) document.body.dataset.theme = savedTheme;
-
-  // ==========================
-  // DASHBOARD DATA
-  // ==========================
-  let allReports = [];
-  let filteredReports = [];
-  let currentFilter = "all";
-
-  const reportsBody = document.getElementById("reports-body");
-  const reportsEmpty = document.getElementById("reports-empty");
-
-  const kpiTotal = document.getElementById("kpi-total");
-  const kpiTotalCaption = document.getElementById("kpi-total-caption");
-  const kpiOk = document.getElementById("kpi-ok");
-  const kpiAlertas = document.getElementById("kpi-alertas");
-  const kpiClientes = document.getElementById("kpi-clientes");
-
-  function computeStatus(report){
-    const adv = (report.advertencia || "").toLowerCase();
-    if (!adv) return "SIN DATO";
-    if (adv.includes("dentro") || adv.includes("recomendado")) return "OK";
-    if (adv.includes("por encima") || adv.includes("por debajo") || adv.includes("fuera")) return "ALERTA";
-    return "REVISAR";
-  }
-
-  function renderReportsTable(){
-    reportsBody.innerHTML = "";
-    reportsEmpty.style.display = filteredReports.length ? "none" : "block";
-
-    filteredReports.forEach(r=>{
-      const status = computeStatus(r);
-      const pillClass = status==="OK" ? "pill-ok" : (status==="ALERTA" ? "pill-alert" : "");
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.fechaLocal}</td>
-        <td>${r.patente || "-"}</td>
-        <td>${(r.marca||"") + " " + (r.modelo||"")}</td>
-        <td>${(r.cliente_nombre||"")}${r.cliente_nombre?"<br>":""}${r.cliente_telefono||"-"}</td>
-        <td>${r.mecanico || "-"}</td>
-        <td><span class="pill ${pillClass}">${status}</span></td>
-        <td>${r.medida_componente != null ? r.medida_componente : "-"}</td>
-      `;
-      tr.addEventListener("click",()=>showDetail(r));
-      reportsBody.appendChild(tr);
-    });
-  }
-
-  function applyFilters(){
-    const search = (document.getElementById("search-input").value||"").toLowerCase();
-
-    filteredReports = allReports.filter(r=>{
-      const status = computeStatus(r);
-      if (currentFilter==="ok" && status!=="OK") return false;
-      if (currentFilter==="alert" && status!=="ALERTA") return false;
-      if (!search) return true;
-
-      const haystack = [
-        r.patente, r.cliente_telefono, r.chat_id, r.marca, r.modelo, r.mecanico
-      ].filter(Boolean).join(" ").toLowerCase();
-
-      return haystack.includes(search);
-    });
-
-    renderReportsTable();
-  }
-
-  async function loadDashboard(){
-    if (!supabaseClient){
-      kpiTotalCaption.textContent = "Configura Supabase para cargar datos reales.";
-      return;
-    }
-    try{
-      const { data, error } = await supabaseClient
-        .from("stc_ev_registros")
-        .select("*")
-        .order("created_at", { ascending:false })
-        .limit(500);
-      if (error) throw error;
-
-      allReports = (data||[]).map(r=>({
-        ...r,
-        fechaLocal: new Date(r.created_at).toLocaleString("es-CL")
-      }));
-
-      const total = allReports.length;
-      const totalOk = allReports.filter(r=>computeStatus(r)==="OK").length;
-      const totalAlert = allReports.filter(r=>computeStatus(r)==="ALERTA").length;
-      const clientesUnicos = new Set(allReports.map(r=>r.cliente_telefono).filter(Boolean)).size;
-
-      kpiTotal.textContent = total;
-      kpiOk.textContent = totalOk;
-      kpiAlertas.textContent = totalAlert;
-      kpiClientes.textContent = clientesUnicos;
-      kpiTotalCaption.textContent = "Datos en tiempo real desde Supabase.";
-
-      filteredReports = [...allReports];
-      renderReportsTable();
-    }catch(err){
-      console.error(err);
-      kpiTotalCaption.textContent = "Error cargando datos desde Supabase.";
-    }
-  }
-
-  // ==========================
-  // DETALLE INFORME
-  // ==========================
-  const detailPlaceholder = document.getElementById("detail-placeholder");
-  const detailContent = document.getElementById("detail-content");
-  const detailLabel = document.getElementById("detail-label");
-
-  const dFecha = document.getElementById("d-fecha");
-  const dPatente = document.getElementById("d-patente");
-  const dVehiculo = document.getElementById("d-vehiculo");
-  const dKm = document.getElementById("d-km");
-  const dMotor = document.getElementById("d-motor");
-  const dMecanico = document.getElementById("d-mecanico");
-  const dClienteNombre = document.getElementById("d-cliente-nombre");
-  const dCliente = document.getElementById("d-cliente");
-  const dComponente = document.getElementById("d-componente");
-  const dMedicion = document.getElementById("d-medicion");
-  const dAdvertencia = document.getElementById("d-advertencia");
-  const dEstado = document.getElementById("d-estado");
-  const dAnalisis = document.getElementById("d-analisis");
-  const dObs = document.getElementById("d-obs");
-
-  let selectedReport=null;
-
-  function showDetail(r){
-    selectedReport=r;
-    detailPlaceholder.style.display="none";
-    detailContent.style.display="flex";
-    detailLabel.textContent = r.patente || r.chat_id || "Informe";
-
-    const status = computeStatus(r);
-
-    dFecha.textContent = r.fechaLocal;
-    dPatente.textContent = r.patente || "-";
-    dVehiculo.textContent = `${r.marca||""} ${r.modelo||""} (${r.ano||"-"})`;
-    dKm.textContent = r.kilometraje!=null ? `${r.kilometraje} km` : "-";
-    dMotor.textContent = r.motor || "-";
-    dMecanico.textContent = r.mecanico || "-";
-    dClienteNombre.textContent = r.cliente_nombre || "Sin nombre";
-    dCliente.textContent = r.cliente_telefono || "-";
-    dComponente.textContent = r.componente || "-";
-    dMedicion.textContent = r.medida_componente!=null ? r.medida_componente : "-";
-    dAdvertencia.textContent = r.advertencia || "-";
-    dEstado.textContent = status;
-    dAnalisis.textContent = r.analisis_ia || "-";
-    dObs.textContent = r.obs_rec || "-";
-  }
-
-  document.getElementById("btn-open-whatsapp").addEventListener("click", ()=>{
-    if(!selectedReport) return;
-    const msg = `Hola, quiero revisar el informe del vehículo ${selectedReport.marca||""} ${selectedReport.modelo||""} patente ${selectedReport.patente||""}.`;
-    window.open(buildWhatsappUrl(msg, selectedReport.cliente_telefono), "_blank");
+  const vehSelects=["aVehicle","qVehicle","iVehicle"];
+  vehSelects.forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML=`<option value="">-- Vehículo (opcional) --</option>`+
+      vehicles.map(v=>`<option value="${v.id}">${v.patente} • ${v.marca||""} ${v.modelo||""}</option>`).join("");
   });
 
-  // filtros
-  document.getElementById("search-input").addEventListener("input", applyFilters);
-  document.querySelectorAll(".tag-filter").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      document.querySelectorAll(".tag-filter").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter=btn.dataset.filter;
-      applyFilters();
-    });
+  const repSel=document.getElementById("qReport");
+  if(repSel){
+    repSel.innerHTML=`<option value="">-- Informe opcional --</option>`+
+      reports.map(r=>`<option value="${r.id}">${r.patente||"-"} • ${UI.fmtDate(r.created_at)}</option>`).join("");
+  }
+
+  const prodSel=["qiProduct","iiProduct"];
+  prodSel.forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML=`<option value="">-- Producto opcional --</option>`+
+      products.map(p=>`<option value="${p.id}" data-price="${p.precio}">${p.nombre} (${UI.money(p.precio)})</option>`).join("");
+  });
+}
+
+/* ======================
+   Reports
+   ====================== */
+async function loadReports(){
+  if(!sb) return;
+  const r = await sb.from("vw_reports_full").select("*").order("created_at",{ascending:false}).limit(500);
+  reports=r.data||[];
+  document.getElementById("b-reports").textContent=reports.length;
+  renderReportsList();
+  fillClientSelects();
+}
+
+function renderReportsList(){
+  const body=document.getElementById("reportsBody");
+  const empty=document.getElementById("reportsEmpty");
+  const q=(document.getElementById("reportsSearch").value||"").toLowerCase();
+  const f=document.getElementById("reportsFilter").value;
+
+  const filtered=reports.filter(r=>{
+    const st=computeStatus(r);
+    if(f==="ok" && st!=="OK") return false;
+    if(f==="alert" && st!=="ALERTA") return false;
+
+    if(!q) return true;
+    const hay=[r.patente,r.cliente_telefono,r.marca,r.modelo,r.mecanico,r.componente]
+      .filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(q);
   });
 
-  // ==========================
-  // CLIENTES
-  // ==========================
-  const clientsBody=document.getElementById("clients-body");
-  const clientsEmpty=document.getElementById("clients-empty");
-
-  async function loadClients(){
-    if(!supabaseClient) return;
-    try{
-      const { data, error } = await supabaseClient
-        .from("stc_ev_clientes")
-        .select("*")
-        .order("ultimo_informe",{ascending:false});
-      if(error) throw error;
-
-      clientsBody.innerHTML="";
-      clientsEmpty.style.display = (data||[]).length ? "none" : "block";
-
-      (data||[]).forEach(c=>{
-        const tr=document.createElement("tr");
-        const fechaUlt=c.ultimo_informe ? new Date(c.ultimo_informe).toLocaleString("es-CL") : "-";
-        const pats=(c.patentes||[]).join(", ");
-        tr.innerHTML=`
-          <td>${c.cliente_telefono||"-"}</td>
-          <td>${c.cliente_nombre||"-"}</td>
-          <td>${pats||"-"}</td>
-          <td>${c.total_informes||0}</td>
-          <td>${fechaUlt}</td>
-          <td>${c.ultimo_mecanico||"-"}</td>
-        `;
-        tr.addEventListener("click",()=>{
-          const input=document.getElementById("search-input");
-          input.value=c.cliente_telefono||"";
-          currentFilter="all";
-          document.querySelectorAll(".tag-filter").forEach(b=>b.classList.remove("active"));
-          document.querySelector('.tag-filter[data-filter="all"]').classList.add("active");
-          applyFilters();
-          document.querySelector('.nav-link[data-section="dashboard"]').click();
-        });
-        clientsBody.appendChild(tr);
-      });
-    }catch(err){
-      console.error(err);
-    }
-  }
-
-  // ==========================
-  // BUSCAR INFORME
-  // ==========================
-  document.getElementById("btn-verify").addEventListener("click", ()=>{
-    const code=(document.getElementById("verification-code").value||"").trim().toLowerCase();
-    if(!code){ alert("Ingresa un código de búsqueda."); return; }
-
-    const result=document.getElementById("verification-result");
-    const empty=document.getElementById("verification-empty");
-    empty.style.display="none"; result.style.display="block";
-
-    const matches=allReports.filter(r=>{
-      const haystack=[r.patente,r.cliente_telefono,r.chat_id].filter(Boolean).join(" ").toLowerCase();
-      return haystack.includes(code);
-    });
-
-    const vCount=document.getElementById("v-count");
-    const vFecha=document.getElementById("v-fecha");
-    const vVehiculo=document.getElementById("v-vehiculo");
-    const vEstado=document.getElementById("v-estado");
-    const vResumen=document.getElementById("v-resumen");
-
-    if(matches.length===0){
-      vCount.textContent="0 (sin resultados)";
-      vFecha.textContent="-"; vVehiculo.textContent="-"; vEstado.textContent="-";
-      vResumen.textContent="No se encontraron informes asociados.";
-      return;
-    }
-
-    const last=matches[0];
-    vCount.textContent=matches.length.toString();
-    vFecha.textContent=last.fechaLocal;
-    vVehiculo.textContent=`${last.marca||""} ${last.modelo||""} (${last.ano||"-"})`;
-    vEstado.textContent=computeStatus(last);
-    vResumen.textContent=last.analisis_ia || last.advertencia || "Informe encontrado sin análisis.";
+  body.innerHTML="";
+  empty.style.display=filtered.length?"none":"block";
+  filtered.forEach(r=>{
+    const st=computeStatus(r);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${UI.fmtDate(r.created_at)}</td>
+      <td>${r.patente||"-"}</td>
+      <td>${(r.marca||"")+" "+(r.modelo||"")}</td>
+      <td>${(r.cliente_nombre||"")}<br>${r.cliente_telefono||"-"}</td>
+      <td>${r.mecanico||"-"}</td>
+      <td><span class="st ${statusClass(st)}">${st}</span></td>
+    `;
+    tr.onclick=()=>showReportDetail(r);
+    body.appendChild(tr);
   });
 
-  // ==========================
-  // TIENDA / PRODUCTOS
-  // ==========================
-  let allProducts=[];
-  let filteredProducts=[];
+  // overview last table
+  renderLastReports();
+}
 
-  const productsGrid=document.getElementById("products-grid");
-  const productsEmpty=document.getElementById("products-empty");
-  const productSearch=document.getElementById("product-search");
+function showReportDetail(r){
+  selectedReport=r;
+  document.getElementById("repDetailEmpty").style.display="none";
+  document.getElementById("repDetail").style.display="flex";
+  document.getElementById("repDetailLabel").textContent=r.patente||"Informe";
+  document.getElementById("rdFecha").textContent=UI.fmtDate(r.created_at);
+  document.getElementById("rdCliente").textContent=r.cliente_nombre||"Sin nombre";
+  document.getElementById("rdTel").textContent=r.cliente_telefono||"-";
+  document.getElementById("rdVeh").textContent=`${r.marca||""} ${r.modelo||""} (${r.ano||"-"})`;
+  document.getElementById("rdPat").textContent=r.patente||"-";
+  document.getElementById("rdComp").textContent=r.componente||"-";
+  document.getElementById("rdMed").textContent=r.medida_componente??"-";
+  document.getElementById("rdAdv").textContent=r.advertencia||"-";
+  document.getElementById("rdMec").textContent=r.mecanico||"-";
+  document.getElementById("rdIA").textContent=r.analisis_ia||"-";
+  document.getElementById("rdObs").textContent=r.obs_rec||"-";
+}
 
-  function renderProducts(){
-    productsGrid.innerHTML="";
-    productsEmpty.style.display = filteredProducts.length ? "none" : "block";
+document.getElementById("reportsSearch").addEventListener("input", renderReportsList);
+document.getElementById("reportsFilter").addEventListener("change", renderReportsList);
 
-    filteredProducts.forEach(p=>{
-      const card=document.createElement("div");
-      card.className="product-card";
-      card.innerHTML=`
-        <img class="product-img" src="${p.imagen_url||""}" onerror="this.style.display='none'">
-        <div class="product-title">${p.nombre}</div>
-        <div class="product-meta">${p.categoria||"-"} • ${p.marca||"-"}</div>
-        <div class="product-price">$${Number(p.precio||0).toLocaleString("es-CL")}</div>
-        <div class="product-stock">Stock: <b>${p.stock}</b> ${p.activo?"":"• (inactivo)"}</div>
-        <div class="subtitle" style="font-size:.82rem;">${p.descripcion||""}</div>
-        <div class="product-actions">
-          <button class="btn-outline" data-edit="${p.id}">Editar</button>
-          <button class="btn-danger" data-del="${p.id}">Eliminar</button>
-        </div>
-      `;
-      productsGrid.appendChild(card);
-    });
+document.getElementById("btnRDWhatsapp").onclick=()=>{
+  if(!selectedReport) return;
+  const msg=`Hola, revisemos el informe del vehículo ${selectedReport.marca||""} ${selectedReport.modelo||""} patente ${selectedReport.patente||""}.`;
+  window.open(buildWhatsappUrl(msg, selectedReport.cliente_telefono),"_blank");
+};
+document.getElementById("btnFromReportQuote").onclick=()=>{
+  if(!selectedReport) return;
+  navBtns.find(b=>b.dataset.section==="quotes").click();
+  document.getElementById("qClient").value=selectedReport.client_id||"";
+  document.getElementById("qVehicle").value=selectedReport.vehicle_id||"";
+  document.getElementById("qReport").value=selectedReport.id||"";
+};
 
-    // eventos editar / eliminar
-    productsGrid.querySelectorAll("[data-edit]").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const id=btn.dataset.edit;
-        const prod=allProducts.find(x=>x.id===id);
-        if(prod) fillProductForm(prod);
-      });
-    });
-    productsGrid.querySelectorAll("[data-del]").forEach(btn=>{
-      btn.addEventListener("click", async ()=>{
-        const id=btn.dataset.del;
-        if(!confirm("¿Eliminar producto?")) return;
-        await deleteProduct(id);
-      });
-    });
-  }
+/* ======================
+   Appointments
+   ====================== */
+async function loadAppointments(){
+  if(!sb) return;
+  const a = await sb.from("stc_appointments")
+    .select("*, stc_clients(nombre,telefono), stc_vehicles(patente)")
+    .order("fecha_inicio",{ascending:true})
+    .limit(200);
+  const data=a.data||[];
+  document.getElementById("b-appointments").textContent=data.length;
+  renderAppointments(data);
+  renderNextAppointments(data);
+}
 
-  function applyProductFilter(){
-    const s=(productSearch.value||"").toLowerCase();
-    filteredProducts = allProducts.filter(p=>{
-      if(!s) return true;
-      const hay=[p.nombre,p.categoria,p.marca].filter(Boolean).join(" ").toLowerCase();
-      return hay.includes(s);
-    });
-    renderProducts();
-  }
+function renderAppointments(data){
+  const body=document.getElementById("apptBody");
+  const empty=document.getElementById("apptEmpty");
+  body.innerHTML="";
+  empty.style.display=data.length?"none":"block";
 
-  async function loadProducts(){
-    if(!supabaseClient) return;
-    try{
-      const { data, error } = await supabaseClient
-        .from("stc_products")
-        .select("*")
-        .order("created_at",{ascending:false});
-      if(error) throw error;
-      allProducts=data||[];
-      filteredProducts=[...allProducts];
-      renderProducts();
-    }catch(err){
-      console.error("Error loadProducts:", err);
-    }
-  }
+  data.forEach(ap=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${UI.fmtDate(ap.fecha_inicio)}</td>
+      <td>${ap.stc_clients?.nombre||"Sin nombre"}<br>${ap.stc_clients?.telefono||"-"}</td>
+      <td>${ap.stc_vehicles?.patente||"-"}</td>
+      <td>${ap.motivo||"-"}</td>
+      <td><span class="st ${statusClass(ap.estado==="confirmada"?"OK":ap.estado==="cancelada"?"ALERTA":"REVISAR")}">${ap.estado}</span></td>
+      <td>
+        <button class="btn" data-action="confirm" data-id="${ap.id}">Confirmar</button>
+        <button class="btn danger" data-action="cancel" data-id="${ap.id}">Cancelar</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
 
-  // Form producto
-  const productForm=document.getElementById("product-form");
-  const productFormTitle=document.getElementById("product-form-title");
-  const btnDeleteProduct=document.getElementById("btn-delete-product");
-  const btnClearProduct=document.getElementById("btn-clear-product");
-
-  function clearProductForm(){
-    productForm.reset();
-    document.getElementById("product-id").value="";
-    productFormTitle.textContent="Crear producto";
-    btnDeleteProduct.style.display="none";
-  }
-
-  function fillProductForm(p){
-    document.getElementById("product-id").value=p.id;
-    document.getElementById("p-nombre").value=p.nombre||"";
-    document.getElementById("p-precio").value=p.precio||0;
-    document.getElementById("p-categoria").value=p.categoria||"";
-    document.getElementById("p-marca").value=p.marca||"";
-    document.getElementById("p-stock").value=p.stock||0;
-    document.getElementById("p-imagen").value=p.imagen_url||"";
-    document.getElementById("p-descripcion").value=p.descripcion||"";
-    document.getElementById("p-activo").value=String(!!p.activo);
-    productFormTitle.textContent="Editar producto";
-    btnDeleteProduct.style.display="inline-flex";
-  }
-
-  async function saveProduct(payload){
-    const id=document.getElementById("product-id").value;
-    if(!supabaseClient) return;
-
-    if(!id){
-      const { error } = await supabaseClient.from("stc_products").insert(payload);
-      if(error) throw error;
-    }else{
-      const { error } = await supabaseClient.from("stc_products").update(payload).eq("id", id);
-      if(error) throw error;
-    }
-  }
-
-  async function deleteProduct(id){
-    if(!supabaseClient) return;
-    try{
-      const { error } = await supabaseClient.from("stc_products").delete().eq("id", id);
-      if(error) throw error;
-      clearProductForm();
-      await loadProducts();
-    }catch(err){
-      console.error("deleteProduct", err);
-      alert("Error eliminando producto");
-    }
-  }
-
-  productForm.addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    const payload={
-      nombre: document.getElementById("p-nombre").value.trim(),
-      precio: Number(document.getElementById("p-precio").value||0),
-      categoria: document.getElementById("p-categoria").value.trim() || null,
-      marca: document.getElementById("p-marca").value.trim() || null,
-      stock: Number(document.getElementById("p-stock").value||0),
-      imagen_url: document.getElementById("p-imagen").value.trim() || null,
-      descripcion: document.getElementById("p-descripcion").value.trim() || null,
-      activo: document.getElementById("p-activo").value === "true"
+  body.querySelectorAll("button[data-action]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      const id=btn.dataset.id;
+      const action=btn.dataset.action;
+      const estado= action==="confirm" ? "confirmada" : "cancelada";
+      await sb.from("stc_appointments").update({estado}).eq("id",id);
+      loadAppointments();
     };
+  });
+}
 
-    try{
-      await saveProduct(payload);
-      clearProductForm();
-      await loadProducts();
-      alert("Producto guardado ✅");
-    }catch(err){
-      console.error("saveProduct err:", err);
-      alert("Error guardando producto. Revisa consola.");
-    }
+document.getElementById("btnNewAppointment").onclick=()=>UI.open("apptModal");
+document.getElementById("btnApptNew2").onclick=()=>UI.open("apptModal");
+document.getElementById("btnApptRefresh").onclick=loadAppointments;
+
+document.getElementById("apptForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const payload={
+    client_id: document.getElementById("aClient").value || null,
+    vehicle_id: document.getElementById("aVehicle").value || null,
+    fecha_inicio: new Date(document.getElementById("aInicio").value),
+    fecha_fin: document.getElementById("aFin").value ? new Date(document.getElementById("aFin").value) : null,
+    motivo: document.getElementById("aMotivo").value || null,
+    estado:"agendada"
+  };
+  await sb.from("stc_appointments").insert(payload);
+  UI.close("apptModal");
+  document.getElementById("apptForm").reset();
+  loadAppointments();
+});
+
+/* ======================
+   Products
+   ====================== */
+function renderProducts(){
+  const body=document.getElementById("prodBody");
+  const empty=document.getElementById("prodEmpty");
+  const q=(document.getElementById("prodSearch").value||"").toLowerCase();
+  const filtered=products.filter(p=>{
+    if(!q) return true;
+    return [p.nombre,p.categoria,p.marca].filter(Boolean).join(" ").toLowerCase().includes(q);
   });
 
-  btnDeleteProduct.addEventListener("click", async ()=>{
-    const id=document.getElementById("product-id").value;
-    if(!id) return;
-    if(!confirm("¿Eliminar este producto?")) return;
-    await deleteProduct(id);
+  body.innerHTML="";
+  empty.style.display=filtered.length?"none":"block";
+  filtered.forEach(p=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${p.nombre}</td>
+      <td>${p.categoria||"-"}</td>
+      <td>${p.marca||"-"}</td>
+      <td>${UI.money(p.precio)}</td>
+      <td>${p.stock}</td>
+      <td>${p.activo?"Sí":"No"}</td>
+      <td><button class="btn outline" data-edit="${p.id}">Editar</button></td>
+    `;
+    body.appendChild(tr);
   });
 
-  btnClearProduct.addEventListener("click", clearProductForm);
-  productSearch.addEventListener("input", applyProductFilter);
-  document.getElementById("btn-refresh-products").addEventListener("click", loadProducts);
+  body.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.dataset.edit;
+      const p=products.find(x=>x.id===id);
+      if(p) fillProdForm(p);
+    };
+  });
+}
 
-  // ==========================
-  // INIT
-  // ==========================
-  async function init(){
-    await loadDashboard();
-    await loadClients();
-    await loadProducts();
+document.getElementById("btnProdRefresh").onclick=loadClientsVehiclesProducts;
+document.getElementById("prodSearch").addEventListener("input", renderProducts);
+document.getElementById("btnProdNew").onclick=()=>fillProdForm(null);
+
+function fillProdForm(p){
+  document.getElementById("prodForm").reset();
+  document.getElementById("prodId").value=p?.id||"";
+  document.getElementById("prodFormTitle").textContent=p?"Editar producto":"Crear producto";
+  document.getElementById("btnProdDelete").style.display=p?"inline-flex":"none";
+
+  if(!p) return;
+  pNombre.value=p.nombre||"";
+  pPrecio.value=p.precio||0;
+  pCat.value=p.categoria||"";
+  pMarca.value=p.marca||"";
+  pStock.value=p.stock||0;
+  pImg.value=p.imagen_url||"";
+  pDesc.value=p.descripcion||"";
+  pActivo.value=String(!!p.activo);
+}
+
+btnProdClear.onclick=()=>fillProdForm(null);
+
+document.getElementById("prodForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const id=prodId.value||null;
+  const payload={
+    nombre:pNombre.value.trim(),
+    precio:Number(pPrecio.value||0),
+    categoria:pCat.value.trim()||null,
+    marca:pMarca.value.trim()||null,
+    stock:Number(pStock.value||0),
+    imagen_url:pImg.value.trim()||null,
+    descripcion:pDesc.value.trim()||null,
+    activo:pActivo.value==="true"
+  };
+  if(!id) await sb.from("stc_products").insert(payload);
+  else await sb.from("stc_products").update(payload).eq("id",id);
+
+  await loadClientsVehiclesProducts();
+  fillProdForm(null);
+});
+
+btnProdDelete.onclick=async ()=>{
+  const id=prodId.value;
+  if(!id) return;
+  if(!confirm("¿Eliminar producto?")) return;
+  await sb.from("stc_products").delete().eq("id",id);
+  await loadClientsVehiclesProducts();
+  fillProdForm(null);
+};
+
+/* ======================
+   Quotes + items
+   ====================== */
+async function loadQuotes(){
+  if(!sb) return;
+  const q = await sb.from("stc_quotes")
+    .select("*, stc_clients(nombre,telefono), stc_vehicles(patente)")
+    .order("created_at",{ascending:false})
+    .limit(200);
+  quotes=q.data||[];
+
+  document.getElementById("b-quotes").textContent=quotes.length;
+  renderQuotes();
+}
+
+function renderQuotes(){
+  const body=document.getElementById("quoteBody");
+  const empty=document.getElementById("quoteEmpty");
+  body.innerHTML="";
+  empty.style.display=quotes.length?"none":"block";
+
+  quotes.forEach(q=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${UI.fmtDate(q.created_at)}</td>
+      <td>${q.stc_clients?.nombre||"Sin nombre"}<br>${q.stc_clients?.telefono||"-"}</td>
+      <td>${q.stc_vehicles?.patente||"-"}</td>
+      <td>${q.estado}</td>
+      <td>${UI.money(q.total)}</td>
+      <td><button class="btn outline" data-open="${q.id}">Abrir</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll("[data-open]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      const id=btn.dataset.open;
+      const q=quotes.find(x=>x.id===id);
+      if(q) await openQuote(q);
+    };
+  });
+}
+
+async function openQuote(q){
+  selectedQuote=q;
+  quoteId.value=q.id;
+  quoteFormTitle.textContent="Editar cotización";
+  btnQuoteDelete.style.display="inline-flex";
+  qClient.value=q.client_id||"";
+  qVehicle.value=q.vehicle_id||"";
+  qReport.value=q.report_id||"";
+  qEstado.value=q.estado||"pendiente";
+  qNota.value=q.nota||"";
+
+  await loadQuoteItems(q.id);
+}
+
+async function loadQuoteItems(id){
+  const it = await sb.from("stc_quote_items").select("*").eq("quote_id",id).order("created_at");
+  quoteItemsById[id]=it.data||[];
+  renderQuoteItems(id);
+
+  const header = await sb.from("stc_quotes").select("subtotal,iva,total").eq("id",id).single();
+  qSub.textContent=UI.money(header.data?.subtotal);
+  qIva.textContent=UI.money(header.data?.iva);
+  qTot.textContent=UI.money(header.data?.total);
+}
+
+function renderQuoteItems(id){
+  const items=quoteItemsById[id]||[];
+  quoteItemsBody.innerHTML="";
+  items.forEach(it=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${it.descripcion}</td>
+      <td>${it.cantidad}</td>
+      <td>${UI.money(it.precio_unit)}</td>
+      <td>${UI.money(it.total_item)}</td>
+      <td><button class="btn danger" data-del="${it.id}">X</button></td>
+    `;
+    quoteItemsBody.appendChild(tr);
+  });
+
+  quoteItemsBody.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      await sb.from("stc_quote_items").delete().eq("id",btn.dataset.del);
+      loadQuoteItems(id);
+      loadQuotes();
+      loadOverview();
+    };
+  });
+}
+
+btnQuoteRefresh.onclick=loadQuotes;
+btnQuoteNew.onclick=()=>clearQuoteForm();
+btnNewQuote.onclick=()=>{ navBtns.find(b=>b.dataset.section==="quotes").click(); clearQuoteForm(); };
+
+function clearQuoteForm(){
+  selectedQuote=null;
+  quoteForm.reset();
+  quoteId.value="";
+  quoteFormTitle.textContent="Nueva cotización";
+  btnQuoteDelete.style.display="none";
+  quoteItemsBody.innerHTML="";
+  qSub.textContent=qIva.textContent=qTot.textContent=UI.money(0);
+}
+
+btnQuoteClear.onclick=clearQuoteForm;
+
+quoteForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const id=quoteId.value||null;
+  const payload={
+    client_id:qClient.value||null,
+    vehicle_id:qVehicle.value||null,
+    report_id:qReport.value||null,
+    estado:qEstado.value,
+    nota:qNota.value||null
+  };
+  if(!id){
+    const ins=await sb.from("stc_quotes").insert(payload).select("*").single();
+    await loadQuotes();
+    await openQuote(ins.data);
+  }else{
+    await sb.from("stc_quotes").update(payload).eq("id",id);
+    await loadQuotes();
+    await openQuote({...selectedQuote,...payload});
   }
-  document.addEventListener("DOMContentLoaded", init);
+  loadOverview();
+});
+
+btnQuoteDelete.onclick=async ()=>{
+  const id=quoteId.value;
+  if(!id) return;
+  if(!confirm("¿Eliminar cotización?")) return;
+  await sb.from("stc_quotes").delete().eq("id",id);
+  clearQuoteForm();
+  loadQuotes();
+  loadOverview();
+};
+
+qiProduct.addEventListener("change", ()=>{
+  const opt=qiProduct.selectedOptions[0];
+  if(opt?.dataset?.price){
+    qiPrice.value=opt.dataset.price;
+    qiDesc.value=opt.textContent;
+  }
+});
+
+quoteItemForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const qid=quoteId.value;
+  if(!qid){ alert("Primero guarda la cabecera de cotización"); return; }
+
+  const payload={
+    quote_id:qid,
+    product_id:qiProduct.value||null,
+    descripcion:(qiDesc.value||qiProduct.selectedOptions[0]?.textContent||"Item").trim(),
+    cantidad:Number(qiQty.value||1),
+    precio_unit:Number(qiPrice.value||0)
+  };
+  await sb.from("stc_quote_items").insert(payload);
+  qiDesc.value=""; qiQty.value=1; qiPrice.value=0; qiProduct.value="";
+  loadQuoteItems(qid);
+  loadQuotes();
+  loadOverview();
+});
+
+btnQuoteWhatsapp.onclick=()=>{
+  if(!selectedQuote) return;
+  const cl=clients.find(c=>c.id===selectedQuote.client_id);
+  const msg=`Hola ${cl?.nombre||""}, te envío la cotización.\nTotal: ${UI.money(selectedQuote.total)}.\nEstado: ${selectedQuote.estado}`;
+  window.open(buildWhatsappUrl(msg, cl?.telefono),"_blank");
+};
+
+btnQuoteToInvoice.onclick=async ()=>{
+  const qid=quoteId.value;
+  if(!qid){ alert("No hay cotización seleccionada"); return; }
+
+  // crear factura desde cotización
+  const head=await sb.from("stc_quotes").select("*").eq("id",qid).single();
+  const items=await sb.from("stc_quote_items").select("*").eq("quote_id",qid);
+
+  const folio="FAC-"+Math.floor(Math.random()*900000+100000);
+  const invIns=await sb.from("stc_invoices").insert({
+    quote_id:qid,
+    client_id:head.data.client_id,
+    vehicle_id:head.data.vehicle_id,
+    folio,
+    estado_pago:"pendiente",
+    nota:head.data.nota
+  }).select("*").single();
+
+  for(const it of (items.data||[])){
+    await sb.from("stc_invoice_items").insert({
+      invoice_id:invIns.data.id,
+      product_id:it.product_id,
+      descripcion:it.descripcion,
+      cantidad:it.cantidad,
+      precio_unit:it.precio_unit
+    });
+  }
+
+  navBtns.find(b=>b.dataset.section==="invoices").click();
+  await loadInvoices();
+  await openInvoice(invIns.data);
+  loadOverview();
+};
+
+/* ======================
+   Invoices + items
+   ====================== */
+async function loadInvoices(){
+  if(!sb) return;
+  const inv = await sb.from("stc_invoices")
+    .select("*, stc_clients(nombre,telefono), stc_vehicles(patente)")
+    .order("created_at",{ascending:false})
+    .limit(200);
+  invoices=inv.data||[];
+  document.getElementById("b-invoices").textContent=invoices.length;
+  renderInvoices();
+}
+
+function renderInvoices(){
+  const body=document.getElementById("invBody");
+  const empty=document.getElementById("invEmpty");
+  body.innerHTML="";
+  empty.style.display=invoices.length?"none":"block";
+
+  invoices.forEach(i=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${UI.fmtDate(i.created_at)}</td>
+      <td>${i.folio||"-"}</td>
+      <td>${i.stc_clients?.nombre||"Sin nombre"}<br>${i.stc_clients?.telefono||"-"}</td>
+      <td>${UI.money(i.total)}</td>
+      <td>${i.estado_pago}</td>
+      <td><button class="btn outline" data-open="${i.id}">Abrir</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll("[data-open]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      const id=btn.dataset.open;
+      const i=invoices.find(x=>x.id===id);
+      if(i) await openInvoice(i);
+    };
+  });
+
+  renderLastInvoices();
+}
+
+async function openInvoice(i){
+  selectedInvoice=i;
+  invId.value=i.id;
+  invFormTitle.textContent="Editar factura";
+  btnInvDelete.style.display="inline-flex";
+  iFolio.value=i.folio||"";
+  iPago.value=i.estado_pago||"pendiente";
+  iClient.value=i.client_id||"";
+  iVehicle.value=i.vehicle_id||"";
+  iNota.value=i.nota||"";
+  await loadInvoiceItems(i.id);
+}
+
+async function loadInvoiceItems(id){
+  const it = await sb.from("stc_invoice_items").select("*").eq("invoice_id",id).order("created_at");
+  invItemsById[id]=it.data||[];
+  renderInvoiceItems(id);
+
+  const header = await sb.from("stc_invoices").select("subtotal,iva,total").eq("id",id).single();
+  iSub.textContent=UI.money(header.data?.subtotal);
+  iIva.textContent=UI.money(header.data?.iva);
+  iTot.textContent=UI.money(header.data?.total);
+}
+
+function renderInvoiceItems(id){
+  const items=invItemsById[id]||[];
+  invItemsBody.innerHTML="";
+  items.forEach(it=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${it.descripcion}</td>
+      <td>${it.cantidad}</td>
+      <td>${UI.money(it.precio_unit)}</td>
+      <td>${UI.money(it.total_item)}</td>
+      <td><button class="btn danger" data-del="${it.id}">X</button></td>
+    `;
+    invItemsBody.appendChild(tr);
+  });
+
+  invItemsBody.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick=async ()=>{
+      await sb.from("stc_invoice_items").delete().eq("id",btn.dataset.del);
+      loadInvoiceItems(id);
+      loadInvoices();
+      loadOverview();
+    };
+  });
+}
+
+btnInvRefresh.onclick=loadInvoices;
+
+invForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const id=invId.value||null;
+  const payload={
+    folio:iFolio.value.trim()||null,
+    estado_pago:iPago.value,
+    client_id:iClient.value||null,
+    vehicle_id:iVehicle.value||null,
+    nota:iNota.value||null
+  };
+  if(!id){
+    const ins=await sb.from("stc_invoices").insert(payload).select("*").single();
+    await loadInvoices();
+    await openInvoice(ins.data);
+  }else{
+    await sb.from("stc_invoices").update(payload).eq("id",id);
+    await loadInvoices();
+  }
+  loadOverview();
+});
+
+btnInvDelete.onclick=async ()=>{
+  const id=invId.value;
+  if(!id) return;
+  if(!confirm("¿Eliminar factura?")) return;
+  await sb.from("stc_invoices").delete().eq("id",id);
+  selectedInvoice=null;
+  invForm.reset();
+  invId.value="";
+  btnInvDelete.style.display="none";
+  invItemsBody.innerHTML="";
+  iSub.textContent=iIva.textContent=iTot.textContent=UI.money(0);
+  loadInvoices();
+  loadOverview();
+};
+
+iiProduct.addEventListener("change", ()=>{
+  const opt=iiProduct.selectedOptions[0];
+  if(opt?.dataset?.price){
+    iiPrice.value=opt.dataset.price;
+    iiDesc.value=opt.textContent;
+  }
+});
+
+invItemForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const iid=invId.value;
+  if(!iid){ alert("Primero guarda la cabecera de factura"); return; }
+
+  const payload={
+    invoice_id:iid,
+    product_id:iiProduct.value||null,
+    descripcion:(iiDesc.value||iiProduct.selectedOptions[0]?.textContent||"Item").trim(),
+    cantidad:Number(iiQty.value||1),
+    precio_unit:Number(iiPrice.value||0)
+  };
+  await sb.from("stc_invoice_items").insert(payload);
+  iiDesc.value=""; iiQty.value=1; iiPrice.value=0; iiProduct.value="";
+  loadInvoiceItems(iid);
+  loadInvoices();
+  loadOverview();
+});
+
+btnInvWhatsapp.onclick=()=>{
+  if(!selectedInvoice) return;
+  const cl=clients.find(c=>c.id===selectedInvoice.client_id);
+  const msg=`Hola ${cl?.nombre||""}, te envío la factura ${selectedInvoice.folio||""}.\nTotal: ${UI.money(selectedInvoice.total)}.\nEstado pago: ${selectedInvoice.estado_pago}`;
+  window.open(buildWhatsappUrl(msg, cl?.telefono),"_blank");
+};
+
+/* ======================
+   Clients view
+   ====================== */
+async function renderClients(){
+  if(!sb) return;
+  const view=await sb.from("vw_clients_resumen").select("*").order("ultimo_informe",{ascending:false});
+  const data=view.data||[];
+  const body=document.getElementById("clientsBody");
+  body.innerHTML="";
+  data.forEach(c=>{
+    const pats=(c.patentes||[]).join(", ");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c.telefono}</td>
+      <td>${c.nombre||"-"}</td>
+      <td>${pats||"-"}</td>
+      <td>${c.total_informes||0}</td>
+      <td>${c.ultimo_informe?UI.fmtDate(c.ultimo_informe):"-"}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+/* ======================
+   Vehicles view
+   ====================== */
+function renderVehicles(){
+  const body=document.getElementById("vehBody");
+  body.innerHTML="";
+  vehicles.forEach(v=>{
+    const c=clients.find(x=>x.id===v.client_id);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${v.patente}</td>
+      <td>${c?.nombre||"-"}<br>${c?.telefono||"-"}</td>
+      <td>${v.marca||"-"}</td>
+      <td>${v.modelo||"-"}</td>
+      <td>${v.ano||"-"}</td>
+      <td>${v.kilometraje||0}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+/* ======================
+   Overview (KPIs + charts)
+   ====================== */
+let chartStatus, chartTrend, chartComponents;
+
+async function loadOverview(){
+  if(!sb) return;
+  const ok=reports.filter(r=>computeStatus(r)==="OK").length;
+  const alert=reports.filter(r=>computeStatus(r)==="ALERTA").length;
+  const total=reports.length;
+
+  const ap = await sb.from("stc_appointments").select("*").gte("fecha_inicio", new Date().toISOString());
+  const appts=ap.data||[];
+
+  const q = await sb.from("stc_quotes").select("*").eq("estado","pendiente");
+  const pendingQuotes=q.data||[];
+
+  const invMonth = await sb.from("stc_invoices").select("*");
+  const invs=invMonth.data||[];
+
+  const sales=invs.reduce((s,i)=>s+Number(i.total||0),0);
+
+  k-total.textContent=total;
+  k-ok.textContent=ok;
+  k-alert.textContent=alert;
+  k-appt.textContent=appts.length;
+  k-quotes.textContent=pendingQuotes.length;
+  k-sales.textContent=UI.money(sales);
+
+  buildCharts(ok,alert,total);
+  renderLastReports();
+  renderNextAppointments(appts);
+  renderLastInvoices();
+}
+
+function renderLastReports(){
+  const body=document.getElementById("lastReports");
+  body.innerHTML="";
+  reports.slice(0,8).forEach(r=>{
+    const st=computeStatus(r);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${UI.fmtDate(r.created_at)}</td><td>${r.patente||"-"}</td><td>${(r.marca||"")+" "+(r.modelo||"")}</td><td>${st}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderNextAppointments(appts){
+  const body=document.getElementById("nextAppointments");
+  body.innerHTML="";
+  appts.slice(0,8).forEach(a=>{
+    const c=clients.find(x=>x.id===a.client_id);
+    const v=vehicles.find(x=>x.id===a.vehicle_id);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${UI.fmtDate(a.fecha_inicio)}</td><td>${c?.nombre||"-"}</td><td>${v?.patente||"-"}</td><td>${a.estado}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderLastInvoices(){
+  const body=document.getElementById("lastInvoices");
+  body.innerHTML="";
+  invoices.slice(0,8).forEach(i=>{
+    const c=clients.find(x=>x.id===i.client_id);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${UI.fmtDate(i.created_at)}</td><td>${c?.nombre||"-"}</td><td>${UI.money(i.total)}</td><td>${i.estado_pago}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function buildCharts(ok,alert,total){
+  // donut status
+  if(chartStatus) chartStatus.destroy();
+  chartStatus=new Chart(chartStatusEl,{
+    type:"doughnut",
+    data:{labels:["OK","Alertas","Revisar"],datasets:[{data:[ok,alert,total-ok-alert],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false}
+  });
+
+  // trend 14 días
+  const byDay={};
+  reports.forEach(r=>{
+    const d=new Date(r.created_at).toISOString().slice(0,10);
+    byDay[d]=(byDay[d]||0)+1;
+  });
+  const days=Object.keys(byDay).sort().slice(-14);
+  const vals=days.map(d=>byDay[d]);
+
+  if(chartTrend) chartTrend.destroy();
+  chartTrend=new Chart(chartTrendEl,{
+    type:"line",
+    data:{labels:days,datasets:[{label:"Informes",data:vals,tension:.35,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false}
+  });
+
+  // top componentes alerta
+  const comp={};
+  reports.forEach(r=>{
+    if(computeStatus(r)!=="ALERTA") return;
+    const k=r.componente||"Sin componente";
+    comp[k]=(comp[k]||0)+1;
+  });
+  const top=Object.entries(comp).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const labels=top.map(x=>x[0]);
+  const data=top.map(x=>x[1]);
+
+  if(chartComponents) chartComponents.destroy();
+  chartComponents=new Chart(chartComponentsEl,{
+    type:"bar",
+    data:{labels,datasets:[{label:"Alertas",data,borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+}
+const chartStatusEl=document.getElementById("chartStatus");
+const chartTrendEl=document.getElementById("chartTrend");
+const chartComponentsEl=document.getElementById("chartComponents");
+
+/* ======================
+   INIT
+   ====================== */
+document.addEventListener("DOMContentLoaded", async ()=>{
+  if(!sb){
+    alert("Configura SUPABASE_URL y SUPABASE_ANON_KEY en el HTML.");
+    return;
+  }
+  await loadReports();
+  await loadClientsVehiclesProducts();
+  await loadAppointments();
+  await loadQuotes();
+  await loadInvoices();
+  await loadOverview();
+});
 </script>
 </body>
 </html>
-
