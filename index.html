@@ -1254,7 +1254,7 @@
     }
 
     // clientes
-    const c = await sb.from("stc_clients").select("*").order("created_at", { ascending: false });
+    const c = await sb.from("stc_ev_clientes").select("*").order("created_at", { ascending: false });
     state.clients = c.data || [];
 
     // vehículos
@@ -1825,5 +1825,6 @@ state.reports = (ev.data || []).map(normalizeEvRegistro);
 </script>
 </body>
 </html>
+
 
 
