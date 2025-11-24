@@ -1219,6 +1219,34 @@
   /* =========================
      CARGA DE DATOS DESDE SUPABASE
      ========================= */
+ function normalizeEvRegistro(r) {
+  // Ajusta aquí si tus columnas tienen otros nombres
+  return {
+    id: r.id,
+    created_at: r.created_at || r.fecha || r.timestamp,
+
+    // cliente
+    cliente_nombre: r.nombre_cliente || r.cliente || r.nombre || null,
+    cliente_telefono: r.telefono || r.phone || r.whatsapp || null,
+
+    // vehículo
+    patente: r.patente || r.ppu || r.placa || null,
+    marca: r.marca || r.brand || null,
+    modelo: r.modelo || r.model || null,
+    ano: r.ano || r.anio || null,
+    motor: r.motor || null,
+    kilometraje: r.kilometraje || r.km || null,
+
+    // informe técnico
+    mecanico: r.mecanico || r.operador || null,
+    componente: r.componente || r.parte || null,
+    medida_componente: r.medida_componente || r.medida || r.valor || null,
+    advertencia: r.advertencia || r.estado || r.warning || null,
+    analisis_ia: r.analisis_ia || r.ia || r.analisis || null,
+    obs_rec: r.obs_rec || r.recomendacion || r.obs || null,
+  };
+}
+
   async function loadBaseData() {
     if (!sb) {
       alert("Configura tu SUPABASE_URL y SUPABASE_ANON_KEY en el HTML.");
@@ -1234,13 +1262,15 @@
     state.vehicles = v.data || [];
 
     // informes (vista completa si existe, si no, stc_reports)
-    const rv = await sb.from("vw_reports_full").select("*").order("created_at", { ascending: false }).limit(500);
-    if (!rv.error) {
-      state.reports = rv.data || [];
-    } else {
-      const r = await sb.from("stc_reports").select("*").order("created_at", { ascending: false }).limit(500);
-      state.reports = r.data || [];
-    }
+    // informes DESDE stc_ev_registros (tabla n8n)
+const ev = await sb
+  .from("stc_ev_registros")
+  .select("*")
+  .order("created_at", { ascending: false })
+  .limit(500);
+
+state.reports = (ev.data || []).map(normalizeEvRegistro);
+
 
     // citas
     const a = await sb.from("stc_appointments").select("*").order("fecha_inicio", { ascending: true }).limit(300);
@@ -1795,4 +1825,5 @@
 </script>
 </body>
 </html>
+
 
