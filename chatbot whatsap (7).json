@@ -1,0 +1,1014 @@
+{
+  "name": "chatbot whatsap",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -96
+      ],
+      "id": "ac22b959-f270-46f3-9c61-a8fd757b9831",
+      "name": "WhatsApp Trigger",
+      "webhookId": "4da7a1e7-53e7-48b5-91f0-4be93eee10c7",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "BV1QZOY0ygmr5nGe",
+          "name": "whasap1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Texto del usuario:\n{{ $json.mensaje }}\n\nEres un asistente virtual de WhatsApp perteneciente a la empresa **Mecánica CataRomero** 🔧.  \nTu tarea es analizar el mensaje recibido y determinar si el usuario:\n1️⃣ Está pidiendo información sobre qué datos debe entregar para generar el informe.  \n2️⃣ O si ya está proporcionando los datos del vehículo.\n\n──────────────────────────────\n🧠 SI EL USUARIO PIDE INFORMACIÓN:\n──────────────────────────────\n\nResponde con el siguiente mensaje, sin modificarlo:\n\n👋 ¡Hola! Soy el asistente técnico de **Mecánica CataRomero** 🔧  \n\nPara generar tu informe automotriz necesito que me indiques los siguientes datos:\n\n1️⃣ Marca del vehículo  \n2️⃣ Modelo y año  \n3️⃣ Patente o placa  \n4️⃣ Tipo de motor  \n5️⃣ Kilometraje actual  \n6️⃣ Componente a revisar (ej: rueda delantera, nivel de aceite, etc.)  \n7️⃣ Medición registrada (en Nm, L, etc.)  \n8️⃣ Nombre del mecánico responsable  \n\nPuedes enviarlos en un solo mensaje o en una nota de voz clara.  \nCuando termine de procesar la información, te enviaré tu informe en PDF automáticamente. 📄\n\n\n──────────────────────────────\n🧮 SI EL MENSAJE CONTIENE LOS DATOS:\n──────────────────────────────\n\nExtrae y devuelve **únicamente un JSON válido** con el siguiente esquema:\n\n{\n  \"marca_vehiculo\": \"string|null\",\n  \"mecanica_nombre\": \"string|null\",\n  \"nombre_del_mecanico\": \"string|null\",\n  \"mecanica_id\": \"string|null\",\n  \"modelo_vehiculo\": \"string|null\",\n  \"patente_vehiculo\": \"string|null\",\n  \"kilo_metro\": \"number|null\",\n  \"tipo_motor\": \"string|null\",\n  \"año_vehiculo\": \"number|null\",\n  \"componente_vehiculo\": \"string|null\",\n  \"medida_componente\": \"number|null\",\n  \"advertencia\": \"string|null\",\n  \"analisis_ia\": \"string|null\",\n  \"obs_rec\": \"string|null\"\n}\n\n──────────────────────────────\n⚙️ REGLAS DE INTERPRETACIÓN Y CORRECCIÓN:\n──────────────────────────────\n\n🔹 1. Validación y normalización del vehículo\n- Corrige errores de ortografía y formato en marca y modelo.\n- Completa años incompletos (“201” → “2010”) cuando sea claramente lógico.\n- Si no puedes estar razonablemente seguro, deja el campo en null y explica en \"obs_rec\" qué falta confirmar.\n\n🔹 2. Campo “advertencia”\n- Indica si la medición está dentro o fuera del rango OEM:\n  - \"Dentro del rango recomendado por el fabricante.\"\n  - \"Por debajo del rango OEM esperado.\"\n  - \"Por encima del rango OEM recomendado.\"\n\n🔹 3. Campo “analisis_ia”\n- Texto técnico corto (máx. 2 frases).\n- Explica si, según los datos (marca, modelo, año, motor, componente, medida, kilometraje), el vehículo está dentro de parámetros o requiere ajuste.\n\n🔹 4. Campo “obs_rec”\n- Recomendación concreta:\n  - Próxima revisión, ajuste a realizar o acción recomendada.\n- Si faltan datos importantes, indícalo aquí. Ejemplo:\n  - \"Falta confirmar el año exacto del vehículo.\"\n  - \"Falta la medida exacta del torque aplicado.\"\n\n🔹 5. Coherencia general\n- Todos los campos deben tener sentido entre sí.\n- No inventes modelos o configuraciones imposibles.\n- Si algo no se puede inferir con buena confianza, déjalo en null.\n\n──────────────────────────────\n📋 INSTRUCCIÓN FINAL:\n──────────────────────────────\n\nDevuelve **solo el JSON**, sin explicaciones adicionales.  \nSi faltan datos esenciales, NO los inventes: colócalos en null y explica en \"obs_rec\" qué debe confirmar el cliente.\n\nPD: SI LOS DATOS ESTÁN EN NULL ES PORQUE FALTA ESE DATO Y LO VOLVEREMOS A PEDIR AL CLIENTE.\n",
+        "options": {
+          "systemMessage": "Eres un extractor estricto.  \nDevuelves **únicamente un JSON válido** con los campos del esquema especificado, sin texto adicional.\n\n──────────────────────────────\n📋 REGLAS GENERALES:\n──────────────────────────────\n\n1️⃣ **Campos fijos**\n- \"mecanica_nombre\" SIEMPRE será `\"Mecanica CataRomero\"`.  \n- \"mecanica_id\" SIEMPRE será `\"77123123-0\"`.  \n  Estos valores son invariables, aunque el texto del usuario mencione otros nombres o identificaciones.\n\n2️⃣ **Validación del vehículo**\n- Antes de devolver el JSON, valida que **marca, modelo y año correspondan a un vehículo real y coherente**.  \n- Si el usuario escribe algo incorrecto o incompleto (por ejemplo, “nizan b16 201”), corrige automáticamente a la versión más lógica (“Nissan V16 2010”).  \n- Ajusta errores de ortografía y formato, pero **nunca inventes modelos inexistentes**.  \n- Si no puedes determinar una corrección confiable, devuelve `null` en ese campo y acláralo en `\"obs_rec\"`.\n\n3️⃣ **Campo \"analisis_ia\"**\n- Genera un **análisis técnico breve, claro y profesional** (máx. 2 frases).  \n- Indica si el vehículo está dentro de los valores OEM normales o si requiere ajuste.  \n- Basa tu análisis en los datos recibidos: marca, modelo, año, tipo de motor, componente, medida y kilometraje.  \n- Ejemplo:  \n  `\"El torque medido de 89 N·m se encuentra dentro del rango OEM recomendado para el modelo Nissan V16 2010.\"`\n\n4️⃣ **Campo \"obs_rec\"**\n- Escribe una **recomendación u observación técnica corta y coherente**, diferente al análisis.  \n- Si el resultado es correcto, sugiere control preventivo o próxima revisión.  \n- Si está fuera de rango, indica la acción a seguir o el tiempo estimado para volver al taller.  \n- Ejemplo:  \n  `\"Revisar nuevamente en 30 días o 1.000 km para confirmar estabilidad del torque.\"`  \n  `\"Reajustar torque a 95 N·m y verificar alineación del componente.\"`\n\n5️⃣ **Campo \"advertencia\"**\n- Resume en una frase si la medición está:\n  - “Dentro del rango recomendado”  \n  - “Por debajo del rango OEM”  \n  - “Por encima del rango OEM”\n\n6️⃣ **Estilo de respuesta**\n- Usa lenguaje técnico, profesional y directo.  \n- Evita repeticiones, frases extensas o descripciones genéricas.  \n- No agregues texto fuera del JSON.\n\n──────────────────────────────\n📤 SALIDA:\n──────────────────────────────\nDevuelve **solo el JSON** con los campos del esquema solicitado, asegurándote de que todos los valores sean lógicos y consistentes entre sí.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        528,
+        16
+      ],
+      "id": "067b1402-b365-426e-b74c-e7dad8fd330f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        544,
+        208
+      ],
+      "id": "c288275f-77d6-4bff-9147-5bcb0c83885d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VzkxMAcCLNiy7ZGl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.mensaje }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        496
+      ],
+      "id": "c75d3f68-2210-4da6-8363-0449ae383dae",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "69304be1-f270-4a71-8238-f55b5adf3b75",
+              "name": "mensaje",
+              "value": "=\"assignments\": [\n  {\n    \"name\": \"mensaje\",\n    \"value\": \"={{ $json.messages[0].text.body }}\",\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"cliente_telefono\",\n    \"value\": \"={{ $json.messages[0].from }}\",\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"chat_id\",\n    \"value\": \"={{ $json.messages[0].id }}\",\n    \"type\": \"string\"\n  }\n]\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        -96
+      ],
+      "id": "1406983c-68ab-4bcf-b3af-03bbb00ddde6",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text.body }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "8d56e3dc-fd9b-4812-add1-4c2867c748fe"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a42ec792-c025-4be5-bef0-e168eb9b0f0f",
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -176,
+        -32
+      ],
+      "id": "fb560451-bb69-49e5-86aa-a14d6b3155c9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        432
+      ],
+      "id": "7c8f305e-ba5d-4411-832e-6f8de741309a",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VzkxMAcCLNiy7ZGl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        208
+      ],
+      "id": "a48eba6c-0651-4a4e-bf0c-c76cb191cec3",
+      "name": "Download media",
+      "webhookId": "f063297e-68d8-49ed-9a90-bb876ad6e725",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "NsX6KRukgfvgeFuU",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -128,
+        416
+      ],
+      "id": "2a40f8a7-4bfa-495c-939b-259ce7a5fd87",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "b0evkJO92ccJXwfp",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "69304be1-f270-4a71-8238-f55b5adf3b75",
+              "name": "mensaje",
+              "value": "=\"assignments\": [\n  {\n    \"name\": \"mensaje\",\n    \"value\": \"={{ $json.content.parts[0].text }}\",\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"cliente_telefono\",\n    \"value\": \"={{ $json.messages[0].from }}\",\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"chat_id\",\n    \"value\": \"={{ $json.messages[0].id }}\",\n    \"type\": \"string\"\n  }\n]\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        336
+      ],
+      "id": "a92af81f-82f7-4764-b640-4810efbb765c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Construye un informe profesional de mecanica automotriz de revision general con formato HTML, redactado en lenguaje formal y español. Incluye las siguientes secciones:\n\n1. Título y nombre de la empresa\n2. fecha actual (dd/mm/aaaa)\n2.5 nombre del mecanico\n3. marca del vehiculo\n4. modelo y año del vehiculo\n4.5 patente\n4.7 kilometraje\n4.9 tipo de motor\n5. componente a revisar/analizar\n6. nivel de componente y si referencia (Nm, Lb, L, etc)\n7. resultado del analisis.\n8. observaciones\n\nAquí tienes los datos:\n\nAquí tienes los datos:\n{{ JSON.stringify($json, null, 2) }}\n\n",
+        "options": {
+          "systemMessage": "Eres un mecanico experto en todos los vehiculos del mundo, te sabes sus componentes y sus niveles en especidico, gracias a los datos dados, haz un analicis del vehiculo y ve si se encuentra en perfectas condicciones o necesita de un arreglo o que algo este bajo de nivel. Tu objetivo es construir un informe completo, de mecanica automotriz y con formato HTML limpio.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1984,
+        -368
+      ],
+      "id": "3f8f309d-40b1-49e2-bfa0-d136a2c2f3dc",
+      "name": "IA redactora de contrato"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        -128
+      ],
+      "id": "7fee5ab7-41a5-4944-9dd4-5a02ba38de9c",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "VzkxMAcCLNiy7ZGl",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript)\nconst items = $input.all();\n\nreturn items.map(item => {\n  // 1) Tomamos la salida del extractor\n  let raw = item.json.output ?? \"\";\n\n  // 2) Aseguramos que sea string\n  if (typeof raw !== \"string\") {\n    try { raw = JSON.stringify(raw); } catch (e) { raw = String(raw ?? \"\"); }\n  }\n\n  // 3) Extraer el contenido entre ```json ... ``` o ``` ... ```\n  let body = raw;\n  const fencedJson = raw.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n  if (fencedJson && fencedJson[1]) {\n    body = fencedJson[1].trim();\n  }\n\n  // 4) Intentar parsear el JSON\n  let data = {};\n  try {\n    data = JSON.parse(body);\n  } catch (e) {\n    // Fallback: buscar el primer {...} dentro del string por si vino con texto extra\n    const objMatch = body.match(/\\{[\\s\\S]*\\}/);\n    if (objMatch) {\n      try { data = JSON.parse(objMatch[0]); } catch (e2) {}\n    }\n  }\n\n  // 5) Devolver integrando los campos parseados (sin tocar otras propiedades del item)\n  return {\n    json: {\n      ...item.json,\n      marca_vehiculo: data.marca_vehiculo ?? null,\n      mecanica_nombre: data.mecanica_nombre ?? null,\n      nombre_del_mecanico: data.nombre_del_mecanico ?? null,\n      mecanica_id: data.mecanica_id ?? null,\n      modelo_vehiculo: data.modelo_vehiculo ?? null,\n      patente_vehiculo: data.patente_vehiculo ?? null,\n      kilo_metro: data.kilo_metro ?? null,\n      tipo_motor: data.tipo_motor ?? null,\n      \"año_vehiculo\": data[\"año_vehiculo\"] ?? data.ano_vehiculo ?? data.anio_vehiculo ?? null,\n      componente_vehiculo: data.componente_vehiculo ?? null,\n      medida_componente: data.medida_componente ?? null,\n      advertencia: data.advertencia ?? null,\n      analisis_ia: data.analisis_ia ?? null,\n      obs_rec: data.obs_rec ?? null,\n      texto_usuario: item.json.texto_usuario ?? item.json?.content?.parts?.[0]?.text ?? null,\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -16
+      ],
+      "id": "8693c6e2-e0c0-4ea9-a60a-41efadc92c44",
+      "name": "Parsear salida del extractor"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "649ae17e-152a-4449-aa22-fc4e359fed6b",
+              "leftValue": "={{$json.ok}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -32
+      ],
+      "id": "3868fa6c-b834-4ee3-a14f-d1f399663b99",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript)\nconst d = items[0].json || {};\n\nfunction toNumber(x) {\n  if (x === null || x === undefined) return null;\n  if (typeof x === 'number') return x;\n  const n = String(x).replace(/[.,](?=\\d{3}\\b)/g, '').replace(',', '.');\n  const val = Number(n);\n  return Number.isFinite(val) ? val : null;\n}\n\nconst datos = {\n  marca_vehiculo: d.marca_vehiculo ?? null,\n  mecanica_nombre: d.mecanica_nombre ?? null,\n  nombre_del_mecanico: d.nombre_del_mecanico ?? null,\n  mecanica_id: d.mecanica_id ?? null,\n  modelo_vehiculo: d.modelo_vehiculo ?? null,\n  patente_vehiculo: d.patente_vehiculo ?? null,\n  kilo_metro: toNumber(d.kilo_metro),\n  tipo_motor: d.tipo_motor ?? null,\n  \"año_vehiculo\": toNumber(d[\"año_vehiculo\"] ?? d.ano_vehiculo ?? d.anio_vehiculo),\n  componente_vehiculo: d.componente_vehiculo ?? null,\n  medida_componente: toNumber(d.medida_componente),\n  advertencia: d.advertencia ?? null,\n  analisis_ia: d.analisis_ia ?? null,\n  obs_rec: d.obs_rec ?? null,\n};\n\n// Reglas de mínimo requeridas\nconst baseOblig = [\n  \"marca_vehiculo\",\n  \"modelo_vehiculo\",\n  \"año_vehiculo\",\n  \"patente_vehiculo\",\n  \"tipo_motor\",\n  \"kilo_metro\",\n  \"componente_vehiculo\",\n  \"medida_componente\",\n  \"analisis_ia\",\n  \"obs_rec\",\n];\n\n\nconst faltantes = [];\nfor (const k of baseOblig) {\n  const v = datos[k];\n  if (k === \"año_vehiculo\" || k === \"medida_componente\" || k === \"kilo_metro\") {\n    if (!(typeof v === \"number\" && Number.isFinite(v))) faltantes.push(k);\n  } else if (v === null || (typeof v === \"string\" && v.trim() === \"\")) {\n    faltantes.push(k);\n  }\n}\n\n// Validar coherencia entre marca/modelo\nif (datos.marca_vehiculo && !datos.modelo_vehiculo) {\n  faltantes.push(\"modelo_vehiculo (revisar relación con marca)\");\n}\n\n// Validar componente vs medida\nif (datos.componente_vehiculo && datos.medida_componente === null) {\n  faltantes.push(\"medida_componente (falta valor numérico del componente)\");\n}\n\n// Validar datos técnicos mínimos del taller\nif (!datos.mecanica_nombre) faltantes.push(\"mecanica_nombre\");\nif (!datos.nombre_del_mecanico) faltantes.push(\"nombre_del_mecanico\");\n\nreturn [{ json: { ok: faltantes.length === 0, faltantes, datos } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -16
+      ],
+      "id": "c681e67f-e0f3-47da-a9b2-277da5a32e8f",
+      "name": "Validador"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2816,
+        -64
+      ],
+      "id": "c31828d5-e5bf-4937-88de-c314af18a34f",
+      "name": "OBTENER PDF"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/convert/from/html",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "davidsolerm9002@gmail.com_2c4BPgDTmYelRHeaP15GaPEBCQ7yxjLhCHcg64g7vaSrocgchdaMj3WeI2nkt5YB"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "html",
+              "value": "={{ $json.html }}"
+            },
+            {
+              "name": "margins",
+              "value": "25mm 26mm 17mm 20mm"
+            },
+            {
+              "name": "paperSize",
+              "value": "A4"
+            },
+            {
+              "name": "orientation",
+              "value": "portrait"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            },
+            {
+              "name": "scale",
+              "value": "1"
+            },
+            {
+              "name": "useCssPageSize",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2656,
+        -64
+      ],
+      "id": "5efcf278-6faf-4348-8f18-fdca2315af8a",
+      "name": "CREACIÓN PDF"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2304,
+        -64
+      ],
+      "id": "e9e2bdf9-a23a-4796-8b05-8a6447f54a03",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"UTF-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>Informe Técnico Automotriz</title>\n\n<style>\n  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap');\n\n  body {\n    font-family: 'Inter', sans-serif;\n    background-color: #f4f6f8;\n    color: #1e293b;\n    margin: 0;\n    padding: 0;\n  }\n\n  .page {\n    width: 210mm;\n    min-height: 297mm;\n    background: white;\n    margin: 15mm auto;\n    padding: 20mm 25mm;\n    box-shadow: 0 8px 25px rgba(0,0,0,0.08);\n    border-radius: 6px;\n  }\n\n  header {\n    text-align: center;\n    border-bottom: 3px solid #1d4ed8;\n    padding-bottom: 10px;\n    margin-bottom: 20px;\n  }\n\n  header h1 {\n    font-family: 'Source Serif 4', serif;\n    font-size: 22px;\n    color: #0f172a;\n    margin: 0;\n    text-transform: uppercase;\n    letter-spacing: 1px;\n  }\n\n  header p {\n    color: #475569;\n    margin-top: 5px;\n    font-size: 13px;\n  }\n\n  .section {\n    margin-top: 25px;\n  }\n\n  h2 {\n    font-family: 'Source Serif 4', serif;\n    font-size: 15px;\n    border-left: 5px solid #1d4ed8;\n    padding-left: 10px;\n    margin-bottom: 10px;\n    color: #0f172a;\n  }\n\n  table {\n    width: 100%;\n    border-collapse: collapse;\n    font-size: 13px;\n  }\n\n  th, td {\n    text-align: left;\n    padding: 8px;\n  }\n\n  th {\n    background-color: #f1f5f9;\n    color: #1e293b;\n    font-weight: 600;\n    border-bottom: 2px solid #cbd5e1;\n  }\n\n  td {\n    border-bottom: 1px solid #e2e8f0;\n  }\n\n  .status-box {\n    border-radius: 6px;\n    padding: 15px;\n    margin-top: 15px;\n    background-color: #f8fafc;\n    border-left: 5px solid #1d4ed8;\n  }\n\n  .status-box.ok {\n    border-left-color: #15803d;\n    background-color: #ecfdf5;\n  }\n\n  .status-box.alert {\n    border-left-color: #dc2626;\n    background-color: #fef2f2;\n  }\n\n  .status-box p {\n    margin: 0;\n    font-weight: 600;\n  }\n\n  .analysis {\n    background-color: #f9fafb;\n    border: 1px solid #e2e8f0;\n    padding: 15px;\n    border-radius: 6px;\n    margin-top: 10px;\n  }\n\n  .footer {\n    margin-top: 40px;\n    border-top: 2px solid #cbd5e1;\n    padding-top: 10px;\n    font-size: 12px;\n    color: #475569;\n    text-align: center;\n  }\n\n  .signatures {\n    display: flex;\n    justify-content: space-between;\n    margin-top: 35px;\n  }\n\n  .signature {\n    width: 45%;\n    text-align: center;\n  }\n\n  .signature-line {\n    border-top: 2px solid #94a3b8;\n    margin-bottom: 5px;\n  }\n\n  .signature .name {\n    font-weight: 600;\n    color: #0f172a;\n  }\n\n  .signature .role {\n    color: #475569;\n    font-size: 12px;\n  }\n\n  .metadata {\n    text-align: right;\n    font-size: 12px;\n    color: #64748b;\n    margin-top: -10px;\n  }\n\n  .metadata span {\n    display: inline-block;\n    margin-left: 12px;\n  }\n</style>\n</head>\n\n<body>\n  <div class=\"page\">\n    <header>\n      <h1>Informe Técnico Automotriz</h1>\n      <p>{{$json.datos.mecanica_nombre || \"Centro Técnico Automotriz\"}} &nbsp;•&nbsp; RUT {{ $json.datos.mecanica_id }}</p>\n      <div class=\"metadata\">\n        <span><strong>Fecha:</strong> {{ new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'}) }}</span>\n        <span><strong>Responsable:{{ $json.datos.nombre_del_mecanico }}</strong> </span>\n      </div>\n    </header>\n\n    <div class=\"section\">\n      <h2>1. Identificación del Vehículo</h2>\n      <table>\n        <tr><th>Marca</th><td>{{ $json.datos.marca_vehiculo }}</td></tr>\n        <tr><th>Modelo</th><td>{{ $json.datos.modelo_vehiculo }}</td></tr>\n        <tr><th>Año</th><td>{{ $json.datos['año_vehiculo'] }}</td></tr>\n        <tr><th>Patente / Placa</th><td>{{ $json.datos.patente_vehiculo }}</td></tr>\n        <tr><th>Kilometraje</th><td>{{ $json.datos.kilo_metro + \" km\"}}</td></tr>\n        <tr><th>Tipo de Motor</th><td>{{ $json.datos.tipo_motor }}</td></tr>\n      </table>\n    </div>\n\n    <div class=\"section\">\n      <h2>2. Componente Analizado</h2>\n      <table>\n        <tr><th>Componente</th><td>{{ $json.datos.componente_vehiculo }}</td></tr>\n        <tr><th>Medición Registrada</th><td>{{ $json.datos.medida_componente }}</td></tr>\n        <tr><th>Herramienta Utilizada</th><td>{{$json[\"herramienta_medicion\"] || \"Llave dinamométrica calibrada\"}}</td></tr>\n      </table>\n    </div>\n\n    <div class=\"section\">\n      <h2>3. Evaluación Técnica</h2>\n      <div class=\"status-box {{$json['ok'] ? 'ok' : 'alert'}}\">\n        <p>{{ $json.datos.advertencia }}</p>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <h2>4. Análisis Técnico Detallado</h2>\n      <div class=\"analysis\">\n        <p>{{ $json.datos.analisis_ia || \"Sin análisis técnico disponible.\" }}</p>\n      </div>\n    </div>\n\n    <div class=\"section\">\n      <h2>5. Observaciones y Recomendaciones</h2>\n      <div class=\"analysis\">\n        <p>{{ $json.datos.obs_rec || \"No se registraron observaciones adicionales.\" }}</p>\n      </div>\n    </div>\n\n    <div class=\"signatures\">\n      <div class=\"signature\">\n        <div class=\"signature-line\"></div>\n        <div class=\"name\">{{ $json.datos.nombre_del_mecanico || \"____________________\" }}</div>\n        <div class=\"role\">Técnico Responsable<br>{{ $json.datos.mecanica_nombre || \"Centro Técnico\" }}</div>\n      </div>\n      <div class=\"signature\">\n        <div class=\"signature-line\"></div>\n        <div class=\"name\">{{ $json.datos.marca_vehiculo || \"\" }} {{ $json.datos.modelo_vehiculo || \"\" }}</div>\n        <div class=\"role\">Vehículo Evaluado</div>\n      </div>\n    </div>\n\n    <div class=\"footer\">\n      <p><strong>Certificación Digital STC-EV</strong><br>\n      Documento emitido electrónicamente con trazabilidad verificada y respaldo técnico. \n      Uso exclusivo para control y mantenimiento automotriz profesional.</p>\n    </div>\n  </div>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        2464,
+        -96
+      ],
+      "id": "c327e514-953d-43c2-af00-b268d925e4a5",
+      "name": "Plantilla HTML contrato"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "72JLJ6RGygOuUXvr",
+          "mode": "list",
+          "cachedResultName": "REGISTROS_STC_EV",
+          "cachedResultUrl": "/projects/PD4pr73IkkNTSfIh/datatables/72JLJ6RGygOuUXvr"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Marca": "={{ $json.datos.marca_vehiculo }}",
+            "Ano": "={{ $json.datos['año_vehiculo'] }}",
+            "Modelo": "={{ $json.datos.modelo_vehiculo }}",
+            "Patente": "={{ $json.datos.patente_vehiculo }}",
+            "Kilometraje": "={{ $json.datos.kilo_metro }}",
+            "Motor": "={{ $json.datos.tipo_motor }}",
+            "Componente": "={{ $json.datos.componente_vehiculo }}",
+            "Medicion": "={{ $json.datos.medida_componente }}",
+            "Observaciones": "={{ $json.datos.obs_rec }}",
+            "Analisis": "={{ $json.datos.analisis_ia }}",
+            "Advertencia": "={{ $json.datos.advertencia }}",
+            "Mecanico": "={{ $json.datos.nombre_del_mecanico }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Marca",
+              "displayName": "Marca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modelo",
+              "displayName": "Modelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Ano",
+              "displayName": "Ano",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Patente",
+              "displayName": "Patente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Kilometraje",
+              "displayName": "Kilometraje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Motor",
+              "displayName": "Motor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Componente",
+              "displayName": "Componente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Medicion",
+              "displayName": "Medicion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mecanico",
+              "displayName": "Mecanico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Analisis",
+              "displayName": "Analisis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Observaciones",
+              "displayName": "Observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Advertencia",
+              "displayName": "Advertencia",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ChatID",
+              "displayName": "ChatID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -288
+      ],
+      "id": "b3679280-2644-4d67-87cc-978c9212ede4",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "875671182288046",
+        "recipientPhoneNumber": "+56936239379",
+        "textBody": "={{ $json.mensaje_faltantes }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1904,
+        80
+      ],
+      "id": "eefaaf0e-bfe6-4ea5-978f-3fb9fda4b908",
+      "name": "Send message",
+      "webhookId": "514b8d1f-73cc-4fe7-b7d9-63c313e5661d",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "NsX6KRukgfvgeFuU",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "875671182288046",
+        "recipientPhoneNumber": "+56936239379",
+        "messageType": "document",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3024,
+        -64
+      ],
+      "id": "4cd00638-5d23-4634-a124-00b2eb3c238e",
+      "name": "Send message1",
+      "webhookId": "54aebcfd-c034-4708-b8b0-977f7072ed33",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "NsX6KRukgfvgeFuU",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://nyyzuqykkrlznvtmaxrm.supabase.co/rest/v1/stc_ev_registros",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55eXp1cXlra3Jsem52dG1heHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MTQwMTMsImV4cCI6MjA3ODk5MDAxM30.LCVgOYa_7T-fBclBte9asGD-EGZIDShtNZcoNF5e2CM"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $json.chat_id || $json.chatId || null }}\",\n  \"cliente_telefono\": \"{{ $json.cliente_telefono || $json.phone || null }}\",\n  \"mecanica_nombre\": \"{{ $json.datos.mecanica_nombre }}\",\n  \"mecanica_id\": \"{{ $json.datos.mecanica_id }}\",\n  \"mecanico\": \"{{ $json.datos.nombre_del_mecanico }}\",\n  \"marca\": \"{{ $json.datos.marca_vehiculo }}\",\n  \"modelo\": \"{{ $json.datos.modelo_vehiculo }}\",\n  \"ano\": \"{{ $json.datos['año_vehiculo'] }}\",\n  \"patente\": \"{{ $json.datos.patente_vehiculo }}\",\n  \"kilometraje\": \"{{ $json.datos.kilo_metro }}\",\n  \"motor\": \"{{ $json.datos.tipo_motor }}\",\n  \"componente\": \"{{ $json.datos.componente_vehiculo }}\",\n  \"medida_componente\": \"{{ $json.datos.medida_componente }}\",\n  \"advertencia\": \"{{ $json.datos.advertencia }}\",\n  \"analisis_ia\": \"{{ $json.datos.analisis_ia }}\",\n  \"obs_rec\": \"{{ $json.datos.obs_rec }}\",\n  \"texto_usuario\": \"{{ $json.texto_usuario || $json.mensaje || null }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1696,
+        -448
+      ],
+      "id": "fb724b92-af2c-4e4f-948b-ac72656246fc",
+      "name": "HTTP Request1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "5wjgot7Kiwiee7gR",
+          "name": "cata"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// items[0].json = { ok, faltantes, datos }\nconst d = items[0].json;\nconst faltantes = d.faltantes || [];\n\n// Traducir nombres técnicos a algo entendible\nconst etiquetas = {\n  marca_vehiculo: \"marca del vehículo\",\n  modelo_vehiculo: \"modelo del vehículo\",\n  \"año_vehiculo\": \"año del vehículo\",\n  patente_vehiculo: \"patente o placa\",\n  tipo_motor: \"tipo de motor\",\n  kilo_metro: \"kilometraje actual\",\n  componente_vehiculo: \"componente a revisar\",\n  medida_componente: \"medición del componente\",\n  analisis_ia: \"análisis técnico\",\n  obs_rec: \"observaciones / recomendaciones\",\n  mecanica_nombre: \"nombre del taller\",\n  nombre_del_mecanico: \"nombre del mecánico\"\n};\n\nconst lista = faltantes.map(k => `- ${etiquetas[k] || k}`).join('\\n');\n\nlet texto = \"\";\nif (!faltantes.length) {\n  texto =\n    \"Aún me faltan algunos datos importantes para generar tu informe, por favor verifica que me hayas enviado toda la información del vehículo.\";\n} else {\n  texto =\n    \"🏁 Estoy casi listo para generar tu informe, pero todavía me faltan estos datos:\\n\\n\" +\n    lista +\n    \"\\n\\nPor favor envíame SOLO esos datos que faltan (puede ser en texto o nota de voz). Luego volveré a revisar todo y te enviaré el informe completo en PDF. 📄\";\n}\n\nreturn [{ json: { mensaje_faltantes: texto } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        64
+      ],
+      "id": "cb0ba6d6-4125-4909-bd6d-8f208638ff63",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parsear salida del extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download media": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA redactora de contrato": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA redactora de contrato",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear salida del extractor": {
+      "main": [
+        [
+          {
+            "node": "Validador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "IA redactora de contrato",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validador": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CREACIÓN PDF": {
+      "main": [
+        [
+          {
+            "node": "OBTENER PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Plantilla HTML contrato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plantilla HTML contrato": {
+      "main": [
+        [
+          {
+            "node": "CREACIÓN PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OBTENER PDF": {
+      "main": [
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c11dc477-3db4-4ee6-8650-aad2e61b9846",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "93eefd4e09dffee750c498e9f8a76b9251563544f71422fe21dad4ab115070d1"
+  },
+  "id": "P5iSXE2CsJ0aGUk3",
+  "tags": []
+}
